@@ -1,0 +1,38 @@
+[
+  {
+    "model": "Baseline Threshold",
+    "precision": 0.8182,
+    "recall": 1.0,
+    "f1_score": 0.9,
+    "false_positive_rate": 0.0444,
+    "latency_ms_per_sample": 0.0208,
+    "tp": 9,
+    "fp": 2,
+    "tn": 43,
+    "fn": 0
+  },
+  {
+    "model": "Isolation Forest",
+    "precision": 0.5455,
+    "recall": 0.6667,
+    "f1_score": 0.6,
+    "false_positive_rate": 0.1111,
+    "latency_ms_per_sample": 0.1346,
+    "tp": 6,
+    "fp": 5,
+    "tn": 40,
+    "fn": 3
+  },
+  {
+    "model": "Random Forest",
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "false_positive_rate": 0.0,
+    "latency_ms_per_sample": 0.1111,
+    "tp": 9,
+    "fp": 0,
+    "tn": 45,
+    "fn": 0
+  }
+]
