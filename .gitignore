@@ -4,3 +4,5 @@ __pycache__/
 logs/*.log
 data/*.csv
 models/*.pkl
+
+data/*.db
