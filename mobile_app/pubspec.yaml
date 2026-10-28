@@ -1,0 +1,15 @@
+name: sdn_threat_mobile
+description: AI-Powered SDN Threat Protection Mobile SOC (Android & iOS)
+publish_to: "none"
+version: 2.0.0+1
+
+environment:
+  sdk: ">=3.2.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.0
+
+flutter:
+  uses-material-design: true

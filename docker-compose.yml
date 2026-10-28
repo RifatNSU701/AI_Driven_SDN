@@ -1,0 +1,27 @@
+services:
+  sdn-soc-api:
+    build: .
+    container_name: sdn-soc-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./models:/app/models
+    environment:
+      - DATABASE_URL=sqlite:///data/sdn_security.db
+    restart: unless-stopped
+
+  sdn-streamlit-dashboard:
+    build: .
+    container_name: sdn-streamlit-dashboard
+    command: ["streamlit", "run", "src/dashboard.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./models:/app/models
+    depends_on:
+      - sdn-soc-api
+    restart: unless-stopped
