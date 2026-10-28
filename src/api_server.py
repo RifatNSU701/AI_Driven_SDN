@@ -641,3 +641,32 @@ def simulate_traffic(req: SimulationRequest, db: Session = Depends(get_db)):
     }
     flow = scenarios.get(req.scenario, scenarios["benign"])
     return analyze_flow(flow, db)
+from fastapi.responses import PlainTextResponse
+from src.observability import generate_prometheus_metrics, generate_executive_markdown_report
+from src.robustness_suite import run_robustness_suite
+
+
+@app.get("/metrics/prometheus", response_class=PlainTextResponse)
+def prometheus_scrape_endpoint(db: Session = Depends(get_db)):
+    return generate_prometheus_metrics(db, RUNTIME_CONFIG["active_model"])
+
+
+@app.get("/api/robustness")
+def get_robustness_report():
+    report_path = os.path.join(MODEL_DIR, "robustness_report.json")
+    if not os.path.exists(report_path):
+        return run_robustness_suite()
+    with open(report_path, "r") as f:
+        return json.load(f)
+
+
+@app.post("/api/robustness/run")
+def trigger_robustness_suite(db: Session = Depends(get_db)):
+    report = run_robustness_suite()
+    log_audit(db, "admin", "admin", "RUN_ROBUSTNESS_SUITE", f"Pass rate: {report['pass_rate_pct']}% ({report['max_throughput_flows_per_sec']} flows/s)")
+    return report
+
+
+@app.get("/api/reports/executive", response_class=PlainTextResponse)
+def download_executive_report(db: Session = Depends(get_db)):
+    return generate_executive_markdown_report(db, RUNTIME_CONFIG["active_model"])
