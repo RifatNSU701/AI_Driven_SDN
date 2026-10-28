@@ -1,0 +1,8 @@
+{
+  "flow_count": 0.4942,
+  "pkt_rate": 0.0496,
+  "byte_rate": 0.0318,
+  "mean_pkt_size": 0.156,
+  "unique_dst_ports": 0.0643,
+  "syn_ratio": 0.2041
+}
