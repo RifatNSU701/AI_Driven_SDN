@@ -1,4 +1,12 @@
-﻿venv/
+﻿# Ignore local virtual environment and Python cache
+venv/
 __pycache__/
 *.pyc
+
+# Ignore local SQLite database files (contains user accounts & hashes)
+data/*.db
+data/*.db-journal
+
+# Ignore agent/IDE temp files
+.agents/
 .DS_Store
