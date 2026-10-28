@@ -6,7 +6,12 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestClassifier, IsolationForest
+from sklearn.ensemble import (
+    RandomForestClassifier,
+    IsolationForest,
+    GradientBoostingClassifier,
+)
+from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
 
 DATA_PATH = os.path.join("data", "flow_telemetry.csv")
@@ -23,7 +28,7 @@ FEATURES = [
 
 
 def baseline_rule_detector(X_df):
-    """Simple static threshold reference detector."""
+    """Static rule-based threshold reference detector."""
     preds = []
     for _, row in X_df.iterrows():
         if row["unique_dst_ports"] > 10 or row["pkt_rate"] > 150 or row["syn_ratio"] > 0.6:
@@ -101,21 +106,64 @@ def main():
     rf_lat = ((time.perf_counter() - t0) * 1000.0) / len(X_test)
     results.append(evaluate_predictions("Random Forest", y_test, y_pred_rf, rf_lat))
 
+    # 4. Supervised Gradient Boosting Ensemble
+    gb = GradientBoostingClassifier(n_estimators=100, learning_rate=0.1, max_depth=4, random_state=42)
+    gb.fit(X_train_scaled, y_train)
+
+    t0 = time.perf_counter()
+    y_pred_gb = gb.predict(X_test_scaled)
+    gb_lat = ((time.perf_counter() - t0) * 1000.0) / len(X_test)
+    results.append(evaluate_predictions("Gradient Boosting", y_test, y_pred_gb, gb_lat))
+
+    # 5. Lightweight Deep Neural Network (MLPClassifier)
+    mlp = MLPClassifier(hidden_layer_sizes=(32, 16), max_iter=500, random_state=42)
+    mlp.fit(X_train_scaled, y_train)
+
+    t0 = time.perf_counter()
+    y_pred_mlp = mlp.predict(X_test_scaled)
+    mlp_lat = ((time.perf_counter() - t0) * 1000.0) / len(X_test)
+    results.append(evaluate_predictions("Deep Neural Network (MLP)", y_test, y_pred_mlp, mlp_lat))
+
     # Print comparison table
     results_df = pd.DataFrame(results)
-    print("=== Model Evaluation Summary ===")
-    print(results_df[["model", "precision", "recall", "f1_score", "false_positive_rate", "latency_ms_per_sample"]].to_string(index=False))
+    print("=== 5-Model Anomaly Detection Benchmark Summary ===")
+    print(
+        results_df[
+            [
+                "model",
+                "precision",
+                "recall",
+                "f1_score",
+                "false_positive_rate",
+                "latency_ms_per_sample",
+            ]
+        ].to_string(index=False)
+    )
 
-    # Save artifacts
+    # Extract Explainable AI (XAI) global feature importances from Random Forest
+    feature_importances = {
+        feat: round(float(imp), 4)
+        for feat, imp in zip(FEATURES, rf.feature_importances_)
+    }
+    print("\n=== Explainable AI (XAI) Feature Importance ===")
+    for feat, imp in sorted(feature_importances.items(), key=lambda x: x[1], reverse=True):
+        print(f"  - {feat:<18}: {imp:.4f}")
+
+    # Save all trained model artifacts
     joblib.dump(scaler, os.path.join(MODEL_DIR, "scaler.pkl"))
     joblib.dump(iso, os.path.join(MODEL_DIR, "isolation_forest.pkl"))
     joblib.dump(rf, os.path.join(MODEL_DIR, "random_forest.pkl"))
+    joblib.dump(gb, os.path.join(MODEL_DIR, "gradient_boosting.pkl"))
+    joblib.dump(mlp, os.path.join(MODEL_DIR, "mlp_neural_net.pkl"))
+
+    with open(os.path.join(MODEL_DIR, "feature_importances.json"), "w") as f:
+        json.dump(feature_importances, f, indent=2)
 
     metrics_path = os.path.join(MODEL_DIR, "evaluation_metrics.json")
     with open(metrics_path, "w") as f:
         json.dump(results, f, indent=2)
 
-    print(f"\n[+] Saved trained models and {metrics_path} successfully.")
+    print(f"\n[+] Saved all 5 trained models, XAI importances, and {metrics_path} successfully.")
 
 
 if __name__ == "__main__":
