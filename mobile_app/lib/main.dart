@@ -37,11 +37,11 @@ class MobileSocDashboard extends StatefulWidget {
 }
 
 class _MobileSocDashboardState extends State<MobileSocDashboard> {
-  // Works over USB cable via: adb reverse tcp:8000 tcp:8000
   String apiBase = 'http://127.0.0.1:8000';
   String operatorName = 'SOC Operator';
   String activeModel = 'Ensemble Voting (All 5 Models)';
   bool autoRefresh = true;
+  bool isConnected = false;
   Timer? _timer;
 
   Map<String, dynamic> stats = {
@@ -52,7 +52,6 @@ class _MobileSocDashboardState extends State<MobileSocDashboard> {
     'system_status': 'NETWORK HEALTHY',
   };
   List<dynamic> events = [];
-  List<dynamic> benchmarks = [];
 
   final List<String> models = const [
     'Ensemble Voting (All 5 Models)',
@@ -83,21 +82,23 @@ class _MobileSocDashboardState extends State<MobileSocDashboard> {
       final results = await Future.wait([
         http.get(Uri.parse('$apiBase/api/stats')).timeout(const Duration(seconds: 2)),
         http.get(Uri.parse('$apiBase/api/events?limit=35')).timeout(const Duration(seconds: 2)),
-        http.get(Uri.parse('$apiBase/api/models')).timeout(const Duration(seconds: 2)),
       ]);
 
       if (results[0].statusCode == 200 && mounted) {
         final st = jsonDecode(results[0].body);
         final ev = jsonDecode(results[1].body);
-        final md = jsonDecode(results[2].body);
         setState(() {
+          isConnected = true;
           stats = st;
           events = ev.reversed.toList();
-          benchmarks = md['benchmarks'] ?? [];
           activeModel = st['active_model'] ?? activeModel;
         });
       }
-    } catch (_) {}
+    } catch (_) {
+      if (mounted) {
+        setState(() => isConnected = false);
+      }
+    }
   }
 
   Future<void> triggerSimulation(String scenario) async {
@@ -166,7 +167,7 @@ class _MobileSocDashboardState extends State<MobileSocDashboard> {
             TextField(
               controller: urlCtrl,
               decoration: const InputDecoration(
-                labelText: 'FastAPI Server URL (USB adb reverse = 127.0.0.1:8000)',
+                labelText: 'FastAPI Server URL (USB = http://127.0.0.1:8000)',
                 border: OutlineInputBorder(),
                 isDense: true,
               ),
@@ -235,15 +236,28 @@ class _MobileSocDashboardState extends State<MobileSocDashboard> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('🛡️ AI-SDN Threat Protection',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+            Row(
+              children: [
+                const Text('🛡️ AI-SDN Threat Protection',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                const SizedBox(width: 8),
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isConnected ? Colors.greenAccent : Colors.orangeAccent,
+                  ),
+                ),
+              ],
+            ),
             Text('$operatorName • $activeModel',
                 style: const TextStyle(fontSize: 11, color: Colors.cyanAccent)),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_Sweep_outlined),
+            icon: const Icon(Icons.delete_sweep_outlined),
             tooltip: 'Clear Log',
             onPressed: clearEvents,
           ),
@@ -268,7 +282,7 @@ class _MobileSocDashboardState extends State<MobileSocDashboard> {
                     : const Color(0xFF064E3B).withOpacity(0.45),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: hasThreat ? Colors.redAccent : Colors.emeraldAccent,
+                  color: hasThreat ? Colors.redAccent : Colors.greenAccent,
                 ),
               ),
               child: Row(
@@ -417,7 +431,7 @@ class _MobileSocDashboardState extends State<MobileSocDashboard> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Rate: ${e['pkt_rate']} pkts/s | Ports: ${e['unique_dst_ports']} | Latency: ${e['inference_latency_ms']} ms |Time: ${e['time']}',
+                        'Rate: ${e['pkt_rate']} pkts/s | Ports: ${e['unique_dst_ports']} | Latency: ${e['inference_latency_ms']} ms | Time: ${e['time']}',
                         style: const TextStyle(fontSize: 11, color: Colors.white70),
                       ),
                       if ((e['explanation'] ?? '').toString().isNotEmpty) ...[
