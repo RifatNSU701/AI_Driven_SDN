@@ -1,8 +1,4 @@
-venv/
+﻿venv/
 __pycache__/
 *.pyc
-logs/*.log
-data/*.csv
-models/*.pkl
-
-data/*.db
+.DS_Store
