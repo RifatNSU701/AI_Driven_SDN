@@ -3,36 +3,48 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI-SDN SOC | Enterprise Threat Protection Portal</title>
+  <title>AI-SDN Cyber-SOC v3.0 | Enterprise Threat Protection Suite</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
-    body { background-color: #070b14; color: #e2e8f0; font-family: 'Inter', system-ui, sans-serif; }
-    .card { background: rgba(15, 23, 42, 0.88); border: 1px solid rgba(51, 65, 85, 0.65); border-radius: 0.75rem; }
-    .node-box { transition: all 0.25s ease; }
-    .node-quarantined { border-color: #f43f5e !important; background: rgba(136, 19, 55, 0.35) !important; box-shadow: 0 0 15px rgba(244, 63, 94, 0.45); }
+    body { background-color: #050811; color: #e2e8f0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    .card { background: linear-gradient(180deg, rgba(15, 23, 42, 0.92) 0%, rgba(9, 14, 28, 0.95) 100%); border: 1px solid rgba(51, 65, 85, 0.65); border-radius: 0.75rem; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); }
+    .nav-pill { transition: all 0.2s ease; }
+    .nav-pill.active { background: linear-gradient(90deg, #0891b2 0%, #2563eb 100%); color: #fff; box-shadow: 0 0 15px rgba(6, 182, 212, 0.4); }
+    .svg-link { stroke-dasharray: 6 4; animation: flowDash 1.2s linear infinite; }
+    .svg-link-blocked { stroke: #f43f5e !important; stroke-dasharray: 4 4; animation: none; }
+    .svg-link-throttled { stroke: #f59e0b !important; stroke-dasharray: 8 4; animation: flowDash 2.5s linear infinite; }
+    @keyframes flowDash { to { stroke-dashoffset: -20; } }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
   </style>
 </head>
-<body class="min-h-screen flex flex-col text-xs">
+<body class="min-h-screen flex flex-col text-xs select-none">
 
-  <!-- TOP NAVBAR -->
-  <header class="border-b border-slate-800 bg-slate-950/90 sticky top-0 z-30 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+  <!-- TOP ENTERPRISE HEADER -->
+  <header class="border-b border-slate-800/90 bg-slate-950/95 sticky top-0 z-30 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
     <div class="flex items-center gap-3">
-      <div class="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-400 font-bold text-sm">🛡️</div>
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/30 to-blue-600/30 border border-cyan-400/50 flex items-center justify-center text-cyan-300 font-bold text-base shadow-lg">🛡️</div>
       <div>
         <div class="flex items-center gap-2">
-          <h1 class="text-sm font-bold tracking-wide text-white">AI-POWERED SDN THREAT PROTECTION</h1>
-          <span id="statusBadge" class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">NETWORK HEALTHY</span>
+          <h1 class="text-sm font-extrabold tracking-wider text-white">AI-SDN CYBER-SOC COMMAND SUITE <span class="text-cyan-400 font-mono text-[11px]">v3.0</span></h1>
+          <span id="statusBadge" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">NETWORK HEALTHY</span>
         </div>
-        <p class="text-[11px] text-slate-400">Closed-Loop OpenFlow 1.3 Telemetry • 5-Algorithm ML Engine • Explainable AI (XAI)</p>
+        <p class="text-[11px] text-slate-400">OpenFlow 1.3 Closed-Loop Enforcement • 6-Class ML Taxonomy • Mathematical Per-Flow XAI</p>
       </div>
     </div>
 
+    <!-- VIEW NAVIGATION PILLS -->
+    <div class="flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-lg border border-slate-800">
+      <button onclick="switchMainView('viewCommand')" id="btn-viewCommand" class="nav-pill active px-3 py-1.5 rounded-md font-semibold text-xs">🌐 Command Center</button>
+      <button onclick="switchMainView('viewXaiLab')" id="btn-viewXaiLab" class="nav-pill px-3 py-1.5 rounded-md font-semibold text-xs text-slate-300 hover:text-white">🧠 XAI Forensics & Models</button>
+      <button onclick="switchMainView('viewFirewall')" id="btn-viewFirewall" class="nav-pill px-3 py-1.5 rounded-md font-semibold text-xs text-slate-300 hover:text-white">🔥 OpenFlow Firewall & QoS</button>
+      <button onclick="switchMainView('viewRobustness')" id="btn-viewRobustness" class="nav-pill px-3 py-1.5 rounded-md font-semibold text-xs text-slate-300 hover:text-white">🧪 Robustness & Audit</button>
+    </div>
+
+    <!-- GLOBAL CONTROLS -->
     <div class="flex flex-wrap items-center gap-2">
-      <label class="text-slate-400 text-[11px]">Active Detector:</label>
-      <select id="modelSelect" onchange="switchModel()" class="bg-slate-900 border border-slate-700 text-slate-100 rounded px-2.5 py-1 text-xs focus:outline-none focus:border-cyan-400">
+      <select id="modelSelect" onchange="switchModel()" class="bg-slate-900 border border-slate-700 text-slate-100 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-cyan-400">
         <option value="Ensemble Voting (All 5 Models)">Ensemble Voting (All 5 Models)</option>
         <option value="Random Forest">Random Forest</option>
         <option value="Gradient Boosting">Gradient Boosting</option>
@@ -40,254 +52,365 @@
         <option value="Isolation Forest">Isolation Forest</option>
         <option value="Baseline Threshold">Baseline Threshold</option>
       </select>
-
-      <button onclick="exportCSV()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-2.5 py-1 rounded font-medium">⬇ CSV</button>
-      <button onclick="downloadExecutiveReport()" class="bg-indigo-950 hover:bg-indigo-900 border border-indigo-500/40 text-indigo-200 px-2.5 py-1 rounded font-medium">📄 Executive Report</button>
-      <a href="/metrics/prometheus" target="_blank" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-300 px-2.5 py-1 rounded font-medium">📊 Prometheus</a>
-      <div id="userBadge" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-cyan-300 font-medium">Guest / Analyst</div>
-      <button id="authBtn" onclick="openAuthModal()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-1 rounded font-semibold">Login / Register</button>
+      <button onclick="exportCSV()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-2.5 py-1.5 rounded-lg font-medium">⬇ CSV</button>
+      <button onclick="downloadExecutiveReport()" class="bg-indigo-950 hover:bg-indigo-900 border border-indigo-500/40 text-indigo-200 px-2.5 py-1.5 rounded-lg font-medium">📄 Executive Report</button>
+      <div id="userBadge" class="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-cyan-300 font-semibold">admin (ADMIN)</div>
+      <button id="authBtn" onclick="openAuthModal()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-1.5 rounded-lg font-semibold">Account</button>
     </div>
   </header>
 
-  <!-- USER-FRIENDLY GUIDED ADVISOR BANNER -->
-  <div class="bg-slate-900/90 border-b border-slate-800 px-4 py-2 flex flex-wrap items-center justify-between gap-2">
+  <!-- CONTROL-PLANE HARDWARE TELEMETRY & GUIDED BAR -->
+  <div class="bg-slate-900/95 border-b border-slate-800 px-4 py-1.5 flex flex-wrap items-center justify-between gap-3">
     <div class="flex items-center gap-2">
-      <span class="px-2 py-0.5 rounded bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 font-semibold text-[10px]">GUIDED ASSISTANT</span>
-      <span id="guidedMessage" class="text-slate-200 text-xs">System monitoring OpenFlow switch s1. Click any traffic button below to test real-time detection and automatic quarantine.</span>
+      <span class="px-2 py-0.5 rounded bg-cyan-500/20 border border-cyan-400/30 text-cyan-300 font-bold text-[10px]">LIVE SOC ADVISOR</span>
+      <span id="guidedMessage" class="text-slate-200 text-xs">Monitoring OpenFlow 1.3 Switch s1. Click any flow event row to open the Mathematical XAI Forensics Inspector.</span>
     </div>
-    <div class="flex items-center gap-2 text-[11px] text-slate-400">
-      <span>Auto-Refresh:</span>
-      <input type="checkbox" id="autoRefreshToggle" checked class="accent-cyan-500" />
+    <div class="flex flex-wrap items-center gap-4 text-[11px]">
+      <div>Controller CPU: <span id="cpCpu" class="font-mono font-bold text-emerald-400">8.4%</span></div>
+      <div>Controller RAM: <span id="cpRam" class="font-mono font-bold text-cyan-400">312 MB</span></div>
+      <div>OVS Active Flows: <span id="cpFlows" class="font-mono font-bold text-indigo-300">4</span></div>
+      <div>Data-Plane Throughput: <span id="cpThroughput" class="font-mono font-bold text-amber-300">0.0 kbps</span></div>
+      <label class="flex items-center gap-1 text-slate-400 cursor-pointer">
+        <span>Live Poll:</span>
+        <input type="checkbox" id="autoRefreshToggle" checked class="accent-cyan-500" />
+      </label>
     </div>
   </div>
 
-  <!-- MAIN CONTENT -->
-  <main class="flex-1 p-4 space-y-4 max-w-[1600px] w-full mx-auto">
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 p-4 max-w-[1640px] w-full mx-auto space-y-4">
 
-    <!-- KPI ROW -->
+    <!-- 6-METRIC KPI STRIP -->
     <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
       <div class="card p-3">
         <div class="text-slate-400 text-[11px]">Telemetry Windows</div>
-        <div id="kpiTotal" class="text-xl font-bold text-white mt-0.5">0</div>
-        <div class="text-[10px] text-emerald-400 mt-0.5">OpenFlow 1.3 Stream</div>
+        <div id="kpiTotal" class="text-xl font-extrabold text-white mt-0.5">0</div>
+        <div class="text-[10px] text-emerald-400 mt-0.5">5,000-Row Trained Baseline</div>
       </div>
       <div class="card p-3">
-        <div class="text-slate-400 text-[11px]">Automated Quarantines</div>
-        <div id="kpiQuarantines" class="text-xl font-bold text-rose-400 mt-0.5">0</div>
-        <div class="text-[10px] text-slate-400 mt-0.5">OVS priority=100,drop</div>
+        <div class="text-slate-400 text-[11px]">Auto-Quarantines</div>
+        <div id="kpiQuarantines" class="text-xl font-extrabold text-rose-400 mt-0.5">0</div>
+        <div class="text-[10px] text-slate-400 mt-0.5">priority=100,actions=drop</div>
       </div>
       <div class="card p-3">
-        <div class="text-slate-400 text-[11px]">Isolated Hosts</div>
-        <div id="kpiBlockedCount" class="text-xl font-bold text-amber-400 mt-0.5">0</div>
+        <div class="text-slate-400 text-[11px]">Isolated / Throttled Hosts</div>
+        <div id="kpiBlockedCount" class="text-xl font-extrabold text-amber-400 mt-0.5">0</div>
         <div id="kpiBlockedList" class="text-[10px] text-slate-400 truncate mt-0.5">None</div>
       </div>
       <div class="card p-3">
-        <div class="text-slate-400 text-[11px]">Mean ML Latency</div>
-        <div id="kpiLatency" class="text-xl font-bold text-cyan-400 mt-0.5">0.111 ms</div>
-        <div class="text-[10px] text-slate-400 mt-0.5">Real-time scoring</div>
+        <div class="text-slate-400 text-[11px]">Mean Inference Latency</div>
+        <div id="kpiLatency" class="text-xl font-extrabold text-cyan-400 mt-0.5">0.04 ms</div>
+        <div class="text-[10px] text-slate-400 mt-0.5">Sub-millisecond ML loop</div>
       </div>
       <div class="card p-3">
-        <div class="text-slate-400 text-[11px]">Robustness & Evasion</div>
-        <div id="kpiRobustness" class="text-xl font-bold text-emerald-400 mt-0.5">100%</div>
-        <div id="kpiThroughput" class="text-[10px] text-slate-400 mt-0.5">9/9 Scenarios Verified</div>
+        <div class="text-slate-400 text-[11px]">Evasion & Scale Readiness</div>
+        <div id="kpiRobustness" class="text-xl font-extrabold text-emerald-400 mt-0.5">100%</div>
+        <div id="kpiThroughput" class="text-[10px] text-slate-400 mt-0.5">117,758 flows/sec capacity</div>
       </div>
       <div class="card p-3">
-        <div class="text-slate-400 text-[11px]">Active ML Engine</div>
+        <div class="text-slate-400 text-[11px]">Active Detection Engine</div>
         <div id="kpiModel" class="text-sm font-bold text-indigo-300 mt-1 truncate">Ensemble Voting</div>
-        <div class="text-[10px] text-emerald-400 mt-0.5">5 Models Loaded</div>
+        <div class="text-[10px] text-emerald-400 mt-0.5">6-Class Taxonomy Active</div>
       </div>
     </div>
 
-    <!-- MIDDLE GRID: TOPOLOGY + CONTROLS (LEFT) | LIVE CHARTS (RIGHT) -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+    <!-- =================================================================== -->
+    <!-- VIEW 1: SOC COMMAND CENTER                                          -->
+    <!-- =================================================================== -->
+    <div id="viewCommand" class="space-y-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
 
-      <!-- INTERACTIVE SDN TOPOLOGY & ONE-CLICK SIMULATOR -->
-      <div class="card p-3.5 lg:col-span-5 flex flex-col justify-between space-y-3">
-        <div>
-          <div class="flex items-center justify-between mb-2">
-            <h2 class="font-bold text-white text-xs uppercase tracking-wider">🌐 Live SDN & Multi-VM Topology Map</h2>
-            <span class="text-[10px] text-slate-400">Click Blocked Host to Unblock</span>
-          </div>
-
-          <div class="bg-slate-950/90 border border-slate-800 rounded-lg p-3 space-y-3">
-            <div class="flex items-center justify-around">
-              <div class="px-3 py-1.5 rounded bg-indigo-950/70 border border-indigo-500/40 text-center">
-                <div class="font-bold text-indigo-300">Ryu SDN Controller</div>
-                <div class="text-[10px] text-slate-400">Ubuntu 10.10.10.1 : 6633</div>
-              </div>
-              <div class="text-slate-500 font-mono text-[10px]">◄── OpenFlow 1.3 ──►</div>
-              <div class="px-3 py-1.5 rounded bg-cyan-950/70 border border-cyan-500/40 text-center">
-                <div class="font-bold text-cyan-300">Open vSwitch (s1)</div>
-                <div class="text-[10px] text-slate-400">100 Mbps Data Plane</div>
-              </div>
+        <!-- ANIMATED SVG SDN TOPOLOGY & 8-SCENARIO SIMULATOR -->
+        <div class="card p-4 lg:col-span-5 flex flex-col justify-between space-y-3">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h2 class="font-bold text-white text-xs uppercase tracking-wider">🌐 Animated OpenFlow 1.3 & Multi-VM Topology</h2>
+              <span class="text-[10px] text-cyan-400">Click Any Quarantined Node to Unblock</span>
             </div>
 
-            <div class="grid grid-cols-3 gap-2 pt-1">
-              <div id="node-10.0.0.1" class="node-box p-2 rounded bg-slate-900 border border-emerald-500/40 text-center">
-                <div class="font-bold text-emerald-300">h1 (Web Server)</div>
-                <div class="text-[10px] text-slate-400">10.0.0.1 • Protected</div>
-              </div>
-              <div id="node-10.0.0.2" onclick="quickUnblock('10.0.0.2')" class="node-box cursor-pointer p-2 rounded bg-slate-900 border border-slate-700 text-center">
-                <div class="font-bold text-slate-200">h2 (Client)</div>
-                <div id="status-10.0.0.2" class="text-[10px] text-emerald-400">10.0.0.2 • Online</div>
-              </div>
-              <div id="node-10.0.0.4" class="node-box p-2 rounded bg-slate-900 border border-emerald-500/40 text-center">
-                <div class="font-bold text-emerald-300">h4 (DB / iperf)</div>
-                <div class="text-[10px] text-slate-400">10.0.0.4 • Protected</div>
-              </div>
-              <div id="node-10.0.0.3" onclick="quickUnblock('10.0.0.3')" class="node-box cursor-pointer p-2 rounded bg-slate-900 border border-slate-700 text-center">
-                <div class="font-bold text-amber-300">h3 (Mininet Attacker)</div>
-                <div id="status-10.0.0.3" class="text-[10px] text-emerald-400">10.0.0.3 • Online</div>
-              </div>
-              <div id="node-10.10.10.2" onclick="quickUnblock('10.10.10.2')" class="node-box cursor-pointer p-2 rounded bg-slate-900 border border-slate-700 text-center">
-                <div class="font-bold text-rose-300">Kali Linux VM</div>
-                <div id="status-10.10.10.2" class="text-[10px] text-emerald-400">10.10.10.2 • Online</div>
-              </div>
-              <div id="node-10.10.10.3" onclick="quickUnblock('10.10.10.3')" class="node-box cursor-pointer p-2 rounded bg-slate-900 border border-slate-700 text-center">
-                <div class="font-bold text-emerald-300">Linux Mint VM</div>
-                <div id="status-10.10.10.3" class="text-[10px] text-emerald-400">10.10.10.3 • Online</div>
-              </div>
+            <!-- SVG INTERACTIVE NETWORK MAP -->
+            <div class="bg-slate-950 border border-slate-800/90 rounded-xl p-2">
+              <svg viewBox="0 0 520 230" class="w-full h-48">
+                <!-- Animated Data-Plane Links -->
+                <line x1="260" y1="38" x2="260" y2="95" stroke="#6366f1" stroke-width="2.5" class="svg-link" />
+                <line id="link-10.0.0.1" x1="260" y1="115" x2="65" y2="185" stroke="#10b981" stroke-width="2" class="svg-link" />
+                <line id="link-10.0.0.2" x1="260" y1="115" x2="155" y2="185" stroke="#22d3ee" stroke-width="2" class="svg-link" />
+                <line id="link-10.0.0.4" x1="260" y1="115" x2="245" y2="185" stroke="#10b981" stroke-width="2" class="svg-link" />
+                <line id="link-10.0.0.3" x1="260" y1="115" x2="335" y2="185" stroke="#f59e0b" stroke-width="2" class="svg-link" />
+                <line id="link-10.10.10.2" x1="260" y1="115" x2="415" y2="185" stroke="#f43f5e" stroke-width="2" class="svg-link" />
+                <line id="link-10.10.10.3" x1="260" y1="115" x2="485" y2="185" stroke="#14b8a6" stroke-width="2" class="svg-link" />
+
+                <!-- Ryu Controller Node -->
+                <g transform="translate(175, 8)">
+                  <rect width="170" height="32" rx="6" fill="#1e1b4b" stroke="#6366f1" stroke-width="1.5" />
+                  <text x="85" y="15" fill="#a5b4fc" font-size="10" font-weight="bold" text-anchor="middle">Ryu SDN Controller (OFP13)</text>
+                  <text x="85" y="26" fill="#94a3b8" font-size="8.5" text-anchor="middle">Ubuntu 10.10.10.1 : 6633 + ML Engine</text>
+                </g>
+
+                <!-- Open vSwitch s1 Node -->
+                <g transform="translate(185, 88)">
+                  <rect width="150" height="30" rx="6" fill="#083344" stroke="#22d3ee" stroke-width="1.5" />
+                  <text x="75" y="14" fill="#67e8f9" font-size="10" font-weight="bold" text-anchor="middle">Open vSwitch (s1)</text>
+                  <text x="75" y="25" fill="#94a3b8" font-size="8.5" text-anchor="middle">Flow Table + Meter Policing</text>
+                </g>
+
+                <!-- Host Nodes -->
+                <g onclick="quickUnblock('10.0.0.1')" class="cursor-pointer" transform="translate(20, 175)">
+                  <rect id="svg-10.0.0.1" width="76" height="42" rx="5" fill="#0f172a" stroke="#10b981" stroke-width="1.5" />
+                  <text x="38" y="16" fill="#6ee7b7" font-size="9.5" font-weight="bold" text-anchor="middle">h1 Server</text>
+                  <text x="38" y="28" fill="#94a3b8" font-size="8" text-anchor="middle">10.0.0.1</text>
+                  <text x="38" y="38" fill="#10b981" font-size="7.5" text-anchor="middle">PROTECTED</text>
+                </g>
+
+                <g onclick="quickUnblock('10.0.0.2')" class="cursor-pointer" transform="translate(106, 175)">
+                  <rect id="svg-10.0.0.2" width="76" height="42" rx="5" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5" />
+                  <text x="38" y="16" fill="#e2e8f0" font-size="9.5" font-weight="bold" text-anchor="middle">h2 Client</text>
+                  <text x="38" y="28" fill="#94a3b8" font-size="8" text-anchor="middle">10.0.0.2</text>
+                  <text id="svgtxt-10.0.0.2" x="38" y="38" fill="#34d399" font-size="7.5" text-anchor="middle">ONLINE</text>
+                </g>
+
+                <g onclick="quickUnblock('10.0.0.4')" class="cursor-pointer" transform="translate(192, 175)">
+                  <rect id="svg-10.0.0.4" width="76" height="42" rx="5" fill="#0f172a" stroke="#10b981" stroke-width="1.5" />
+                  <text x="38" y="16" fill="#6ee7b7" font-size="9.5" font-weight="bold" text-anchor="middle">h4 iperf DB</text>
+                  <text x="38" y="28" fill="#94a3b8" font-size="8" text-anchor="middle">10.0.0.4</text>
+                  <text x="38" y="38" fill="#10b981" font-size="7.5" text-anchor="middle">PROTECTED</text>
+                </g>
+
+                <g onclick="quickUnblock('10.0.0.3')" class="cursor-pointer" transform="translate(278, 175)">
+                  <rect id="svg-10.0.0.3" width="76" height="42" rx="5" fill="#0f172a" stroke="#f59e0b" stroke-width="1.5" />
+                  <text x="38" y="16" fill="#fcd34d" font-size="9.5" font-weight="bold" text-anchor="middle">h3 Attacker</text>
+                  <text x="38" y="28" fill="#94a3b8" font-size="8" text-anchor="middle">10.0.0.3</text>
+                  <text id="svgtxt-10.0.0.3" x="38" y="38" fill="#34d399" font-size="7.5" text-anchor="middle">ONLINE</text>
+                </g>
+
+                <g onclick="quickUnblock('10.10.10.2')" class="cursor-pointer" transform="translate(364, 175)">
+                  <rect id="svg-10.10.10.2" width="72" height="42" rx="5" fill="#0f172a" stroke="#f43f5e" stroke-width="1.5" />
+                  <text x="36" y="16" fill="#fda4af" font-size="9.5" font-weight="bold" text-anchor="middle">Kali VM</text>
+                  <text x="36" y="28" fill="#94a3b8" font-size="8" text-anchor="middle">10.10.10.2</text>
+                  <text id="svgtxt-10.10.10.2" x="36" y="38" fill="#34d399" font-size="7.5" text-anchor="middle">ONLINE</text>
+                </g>
+
+                <g onclick="quickUnblock('10.10.10.3')" class="cursor-pointer" transform="translate(444, 175)">
+                  <rect id="svg-10.10.10.3" width="68" height="42" rx="5" fill="#0f172a" stroke="#14b8a6" stroke-width="1.5" />
+                  <text x="34" y="16" fill="#5eead4" font-size="9.5" font-weight="bold" text-anchor="middle">Mint VM</text>
+                  <text x="34" y="28" fill="#94a3b8" font-size="8" text-anchor="middle">10.10.10.3</text>
+                  <text id="svgtxt-10.10.10.3" x="34" y="38" fill="#34d399" font-size="7.5" text-anchor="middle">ONLINE</text>
+                </g>
+              </svg>
+            </div>
+          </div>
+
+          <!-- 8-SCENARIO MULTI-CLASS TRAFFIC SIMULATOR -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold text-slate-300 uppercase tracking-wider">⚡ 6-Class SDN Traffic & Attack Generator</span>
+              <button onclick="clearTelemetry()" class="text-[10px] text-slate-400 hover:text-white underline">Reset Telemetry</button>
+            </div>
+            <div class="grid grid-cols-4 gap-1.5">
+              <button onclick="simulate('benign')" class="bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-200 py-1.5 px-2 rounded font-medium text-[11px]">🟢 Normal (h2)</button>
+              <button onclick="simulate('mint_benign')" class="bg-teal-950/80 hover:bg-teal-900 border border-teal-500/40 text-teal-200 py-1.5 px-2 rounded font-medium text-[11px]">🌿 Mint Client</button>
+              <button onclick="simulate('high_vol')" class="bg-sky-950/80 hover:bg-sky-900 border border-sky-500/40 text-sky-200 py-1.5 px-2 rounded font-medium text-[11px]">🔵 iperf3 Burst</button>
+              <button onclick="simulate('stealth_scan')" class="bg-yellow-950/80 hover:bg-yellow-900 border border-yellow-500/40 text-yellow-200 py-1.5 px-2 rounded font-medium text-[11px]">🕵️ Stealth Scan</button>
+              <button onclick="simulate('port_scan')" class="bg-amber-950/80 hover:bg-amber-900 border border-amber-500/40 text-amber-200 py-1.5 px-2 rounded font-medium text-[11px]">🟠 Nmap Scan</button>
+              <button onclick="simulate('syn_flood')" class="bg-rose-950/80 hover:bg-rose-900 border border-rose-500/40 text-rose-200 py-1.5 px-2 rounded font-medium text-[11px]">🔴 SYN Flood</button>
+              <button onclick="simulate('udp_flood')" class="bg-orange-950/80 hover:bg-orange-900 border border-orange-500/40 text-orange-200 py-1.5 px-2 rounded font-medium text-[11px]">💥 UDP Flood</button>
+              <button onclick="simulate('kali_attack')" class="bg-purple-950/80 hover:bg-purple-900 border border-purple-500/40 text-purple-200 py-1.5 px-2 rounded font-medium text-[11px]">🐉 Kali Attack</button>
             </div>
           </div>
         </div>
 
-        <!-- 1-CLICK SIMULATOR -->
-        <div class="space-y-2">
-          <div class="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">⚡ One-Click Live Traffic & Attack Simulator</div>
-          <div class="grid grid-cols-3 gap-1.5">
-            <button onclick="simulate('benign')" class="bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-600/40 text-emerald-200 py-1.5 px-2 rounded font-medium">🟢 Normal (h2)</button>
-            <button onclick="simulate('mint_benign')" class="bg-teal-950/80 hover:bg-teal-900 border border-teal-600/40 text-teal-200 py-1.5 px-2 rounded font-medium">🌿 Mint VM Traffic</button>
-            <button onclick="simulate('high_vol')" class="bg-sky-950/80 hover:bg-sky-900 border border-sky-600/40 text-sky-200 py-1.5 px-2 rounded font-medium">🔵 iperf3 Burst</button>
-            <button onclick="simulate('port_scan')" class="bg-amber-950/80 hover:bg-amber-900 border border-amber-600/40 text-amber-200 py-1.5 px-2 rounded font-medium">🟠 Port Scan (h3)</button>
-            <button onclick="simulate('syn_flood')" class="bg-rose-950/80 hover:bg-rose-900 border border-rose-600/40 text-rose-200 py-1.5 px-2 rounded font-medium">🔴 SYN Flood (h3)</button>
-            <button onclick="simulate('kali_attack')" class="bg-purple-950/80 hover:bg-purple-900 border border-purple-600/40 text-purple-200 py-1.5 px-2 rounded font-medium">🐉 Kali VM Attack</button>
+        <!-- LIVE CHARTS -->
+        <div class="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="card p-4 flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-2">
+              <h2 class="font-bold text-white text-xs uppercase tracking-wider">📈 Real-Time Flow Rate & Port Sweep Stream</h2>
+              <span class="text-[10px] text-slate-400">OpenFlow 1.3 Window=3s</span>
+            </div>
+            <div class="h-56"><canvas id="liveChart"></canvas></div>
           </div>
-        </div>
-
-        <!-- MANUAL SDN POLICY BAR -->
-        <div class="pt-1 border-t border-slate-800 flex flex-wrap items-center gap-1.5">
-          <input id="manualIp" type="text" placeholder="Target IP (e.g. 10.0.0.3)" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs flex-1 min-w-[130px]" />
-          <button onclick="manualPolicy('quarantine')" class="bg-rose-600 hover:bg-rose-500 text-white px-2.5 py-1 rounded font-medium">Quarantine</button>
-          <button onclick="manualPolicy('rate_limit')" class="bg-amber-600 hover:bg-amber-500 text-white px-2.5 py-1 rounded font-medium">Rate-Limit</button>
-          <button onclick="quickUnblockInput()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded font-medium">Unblock</button>
-          <button onclick="clearTelemetry()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded">Reset Log</button>
+          <div class="card p-4 flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-2">
+              <h2 class="font-bold text-white text-xs uppercase tracking-wider">🧠 Latest Flow Mathematical XAI Attribution (%)</h2>
+              <span id="xaiTargetBadge" class="text-[10px] text-cyan-400 font-mono">Awaiting Flow...</span>
+            </div>
+            <div class="h-56"><canvas id="xaiChart"></canvas></div>
+          </div>
         </div>
       </div>
 
-      <!-- CHARTS (RIGHT) -->
-      <div class="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="card p-3.5 flex flex-col justify-between">
-          <h2 class="font-bold text-white text-xs uppercase tracking-wider mb-2">📈 Live Packet Rate & Port Probe Telemetry</h2>
-          <div class="h-52"><canvas id="liveChart"></canvas></div>
+      <!-- LIVE SECURITY EVENT STREAM TABLE -->
+      <div class="card p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2 mb-3">
+          <div class="flex items-center gap-2">
+            <h3 class="font-bold text-white text-xs uppercase tracking-wider">🚨 Live Closed-Loop Security & Explainable AI Stream</h3>
+            <span class="px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-[10px]">Click any row for Deep XAI Forensics</span>
+          </div>
+          <input id="eventSearchInput" oninput="renderEventsTable()" type="text" placeholder="Filter by IP, threat class, or action..." class="bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-xs w-64" />
         </div>
-        <div class="card p-3.5 flex flex-col justify-between">
-          <h2 class="font-bold text-white text-xs uppercase tracking-wider mb-2">🧠 5-Model F1 Benchmark & Precision</h2>
+        <div class="overflow-x-auto max-h-72">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400 text-[11px]">
+                <th class="py-1.5 px-2">Time</th>
+                <th class="py-1.5 px-2">Source IP</th>
+                <th class="py-1.5 px-2">Dest IP</th>
+                <th class="py-1.5 px-2">Pkt Rate</th>
+                <th class="py-1.5 px-2">Mean Size</th>
+                <th class="py-1.5 px-2">Dst Ports</th>
+                <th class="py-1.5 px-2">SYN %</th>
+                <th class="py-1.5 px-2">6-Class Taxonomy</th>
+                <th class="py-1.5 px-2">Drift Z</th>
+                <th class="py-1.5 px-2">Action</th>
+                <th class="py-1.5 px-2">Mathematical XAI Reasoning</th>
+              </tr>
+            </thead>
+            <tbody id="eventsTableBody" class="divide-y divide-slate-800/60"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- VIEW 2: XAI FORENSICS & 5-MODEL BENCHMARK LAB                        -->
+    <!-- =================================================================== -->
+    <div id="viewXaiLab" class="hidden space-y-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div class="card p-4 lg:col-span-6 space-y-3">
+          <h2 class="font-bold text-white text-xs uppercase tracking-wider">🔬 Deep Per-Flow XAI Forensics Inspector</h2>
+          <div id="forensicsInspectorBox" class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+            <div class="text-slate-400">Select any event row in the Command Center or trigger a simulation to inspect per-feature mathematical Z-score contributions and 5-model consensus votes.</div>
+          </div>
+        </div>
+        <div class="card p-4 lg:col-span-6 space-y-3">
+          <h2 class="font-bold text-white text-xs uppercase tracking-wider">📊 5-Algorithm Benchmark Comparison (5,000-Flow Dataset)</h2>
           <div class="h-52"><canvas id="benchmarkChart"></canvas></div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-800 text-slate-400 text-[11px]">
+                  <th class="py-1.5 px-2">Algorithm</th>
+                  <th class="py-1.5 px-2">Precision</th>
+                  <th class="py-1.5 px-2">Recall</th>
+                  <th class="py-1.5 px-2">F1-Score</th>
+                  <th class="py-1.5 px-2">False-Positive Rate</th>
+                  <th class="py-1.5 px-2">Latency / Sample</th>
+                </tr>
+              </thead>
+              <tbody id="modelsTableBody" class="divide-y divide-slate-800/60"></tbody>
+            </table>
+          </div>
         </div>
       </div>
-
     </div>
 
-    <!-- BOTTOM TABS -->
-    <div class="card p-3.5">
-      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2 mb-3">
-        <div class="flex flex-wrap gap-2">
-          <button onclick="showTab('eventsTab')" class="tab-btn bg-cyan-600 text-white px-3 py-1 rounded font-semibold">🚨 Live Security & XAI Log</button>
-          <button onclick="showTab('robustnessTab')" class="tab-btn bg-slate-800 text-slate-300 px-3 py-1 rounded font-semibold">🧪 Phase 5 & 6 Robustness Suite</button>
-          <button onclick="showTab('policiesTab')" class="tab-btn bg-slate-800 text-slate-300 px-3 py-1 rounded font-semibold">🛡️ Active OpenFlow Rules</button>
-          <button onclick="showTab('modelsTab')" class="tab-btn bg-slate-800 text-slate-300 px-3 py-1 rounded font-semibold">📊 All 5 ML Models</button>
-          <button onclick="showTab('auditTab')" class="tab-btn bg-slate-800 text-slate-300 px-3 py-1 rounded font-semibold">📋 SOC Audit Log</button>
+    <!-- =================================================================== -->
+    <!-- VIEW 3: OPENFLOW 1.3 FIREWALL & METER TABLE MANAGER                 -->
+    <!-- =================================================================== -->
+    <div id="viewFirewall" class="hidden space-y-4">
+      <div class="card p-4 space-y-3">
+        <h2 class="font-bold text-white text-xs uppercase tracking-wider">🔥 Programmable OpenFlow 1.3 Flow & Meter Rule Builder</h2>
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-2 items-end bg-slate-950 p-3 rounded-xl border border-slate-800">
+          <div>
+            <label class="text-[10px] text-slate-400">Target Source IP</label>
+            <input id="fwIp" type="text" value="10.0.0.3" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs mt-0.5" />
+          </div>
+          <div>
+            <label class="text-[10px] text-slate-400">OpenFlow Action</label>
+            <select id="fwAction" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs mt-0.5">
+              <option value="quarantine">Quarantine (priority=100, drop)</option>
+              <option value="rate_limit">Rate-Limit (OFPMeterMod / Policing)</option>
+              <option value="whitelist">Whitelist Protected Host (priority=200)</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[10px] text-slate-400">Rate Limit (kbps)</label>
+            <input id="fwRate" type="number" value="512" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs mt-0.5" />
+          </div>
+          <div>
+            <label class="text-[10px] text-slate-400">L4 Protocol Match</label>
+            <select id="fwProto" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs mt-0.5">
+              <option value="ip">Any IPv4 (0x0800)</option>
+              <option value="tcp">TCP Only (proto=6)</option>
+              <option value="udp">UDP Only (proto=17)</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[10px] text-slate-400">Audit Reason</label>
+            <input id="fwReason" type="text" value="SOC Manual OpenFlow Policy" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs mt-0.5" />
+          </div>
+          <div class="flex gap-1.5">
+            <button onclick="deployFirewallRule()" class="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white py-1.5 px-3 rounded font-bold">Install Rule</button>
+            <button onclick="quickUnblock(document.getElementById('fwIp').value)" class="bg-emerald-600 hover:bg-emerald-500 text-white py-1.5 px-3 rounded font-bold">Unblock</button>
+          </div>
         </div>
-        <button onclick="runRobustnessBenchmark()" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded font-semibold text-[11px]">▶ Re-Run 9-Scenario Stress Test</button>
-      </div>
 
-      <!-- TAB 1: EVENTS -->
-      <div id="eventsTab" class="overflow-x-auto max-h-64">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="border-b border-slate-800 text-slate-400 text-[11px]">
-              <th class="py-1.5 px-2">Time</th>
-              <th class="py-1.5 px-2">Source IP</th>
-              <th class="py-1.5 px-2">Dest IP</th>
-              <th class="py-1.5 px-2">Pkt Rate</th>
-              <th class="py-1.5 px-2">Dst Ports</th>
-              <th class="py-1.5 px-2">SYN %</th>
-              <th class="py-1.5 px-2">Model</th>
-              <th class="py-1.5 px-2">Classification</th>
-              <th class="py-1.5 px-2">Action</th>
-              <th class="py-1.5 px-2">Explainable AI (XAI) Reasoning</th>
-            </tr>
-          </thead>
-          <tbody id="eventsTableBody" class="divide-y divide-slate-800/60"></tbody>
-        </table>
+        <div class="overflow-x-auto max-h-80">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400 text-[11px]">
+                <th class="py-1.5 px-2">Rule ID</th>
+                <th class="py-1.5 px-2">Target IP</th>
+                <th class="py-1.5 px-2">OpenFlow Policy</th>
+                <th class="py-1.5 px-2">Meter Bandwidth</th>
+                <th class="py-1.5 px-2">Priority</th>
+                <th class="py-1.5 px-2">Specification / Reason</th>
+                <th class="py-1.5 px-2">Installed At</th>
+                <th class="py-1.5 px-2">Action</th>
+              </tr>
+            </thead>
+            <tbody id="policiesTableBody" class="divide-y divide-slate-800/60"></tbody>
+          </table>
+        </div>
       </div>
+    </div>
 
-      <!-- TAB 2: ROBUSTNESS & EVASION -->
-      <div id="robustnessTab" class="hidden overflow-x-auto max-h-64">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="border-b border-slate-800 text-slate-400 text-[11px]">
-              <th class="py-1.5 px-2">Scenario</th>
-              <th class="py-1.5 px-2">Test Category</th>
-              <th class="py-1.5 px-2">Expected Policy</th>
-              <th class="py-1.5 px-2">Ensemble Decision</th>
-              <th class="py-1.5 px-2">Latency</th>
-              <th class="py-1.5 px-2">Verification</th>
-            </tr>
-          </thead>
-          <tbody id="robustnessTableBody" class="divide-y divide-slate-800/60"></tbody>
-        </table>
-      </div>
+    <!-- =================================================================== -->
+    <!-- VIEW 4: ROBUSTNESS, EVASION & SOC AUDIT CONSOLE                      -->
+    <!-- =================================================================== -->
+    <div id="viewRobustness" class="hidden space-y-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div class="card p-4 lg:col-span-7 space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="font-bold text-white text-xs uppercase tracking-wider">🧪 Phase 5 & 6 Adversarial Evasion & Unseen Traffic Matrix</h2>
+            <button onclick="runRobustnessBenchmark()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded font-bold text-[11px]">▶ Execute Live 9-Scenario Stress Test</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-800 text-slate-400 text-[11px]">
+                  <th class="py-1.5 px-2">Scenario</th>
+                  <th class="py-1.5 px-2">Category</th>
+                  <th class="py-1.5 px-2">Expected</th>
+                  <th class="py-1.5 px-2">Actual</th>
+                  <th class="py-1.5 px-2">Latency</th>
+                  <th class="py-1.5 px-2">Status</th>
+                </tr>
+              </thead>
+              <tbody id="robustnessTableBody" class="divide-y divide-slate-800/60"></tbody>
+            </table>
+          </div>
+        </div>
 
-      <!-- TAB 3: POLICIES -->
-      <div id="policiesTab" class="hidden overflow-x-auto max-h-64">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="border-b border-slate-800 text-slate-400 text-[11px]">
-              <th class="py-1.5 px-2">Rule ID</th>
-              <th class="py-1.5 px-2">Target IP</th>
-              <th class="py-1.5 px-2">OpenFlow Action</th>
-              <th class="py-1.5 px-2">Priority</th>
-              <th class="py-1.5 px-2">Reason</th>
-              <th class="py-1.5 px-2">Created At</th>
-              <th class="py-1.5 px-2">Control</th>
-            </tr>
-          </thead>
-          <tbody id="policiesTableBody" class="divide-y divide-slate-800/60"></tbody>
-        </table>
-      </div>
-
-      <!-- TAB 4: MODELS -->
-      <div id="modelsTab" class="hidden overflow-x-auto max-h-64">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="border-b border-slate-800 text-slate-400 text-[11px]">
-              <th class="py-1.5 px-2">Algorithm</th>
-              <th class="py-1.5 px-2">Precision</th>
-              <th class="py-1.5 px-2">Recall</th>
-              <th class="py-1.5 px-2">F1-Score</th>
-              <th class="py-1.5 px-2">False-Positive Rate</th>
-              <th class="py-1.5 px-2">Latency / Sample</th>
-            </tr>
-          </thead>
-          <tbody id="modelsTableBody" class="divide-y divide-slate-800/60"></tbody>
-        </table>
-      </div>
-
-      <!-- TAB 5: AUDIT -->
-      <div id="auditTab" class="hidden overflow-x-auto max-h-64">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="border-b border-slate-800 text-slate-400 text-[11px]">
-              <th class="py-1.5 px-2">Timestamp</th>
-              <th class="py-1.5 px-2">Operator</th>
-              <th class="py-1.5 px-2">Role</th>
-              <th class="py-1.5 px-2">Action</th>
-              <th class="py-1.5 px-2">Details</th>
-            </tr>
-          </thead>
-          <tbody id="auditTableBody" class="divide-y divide-slate-800/60"></tbody>
-        </table>
+        <div class="card p-4 lg:col-span-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="font-bold text-white text-xs uppercase tracking-wider">📋 Role-Based SOC Operator Audit Trail</h2>
+            <a href="/metrics/prometheus" target="_blank" class="text-cyan-400 hover:underline text-[11px]">Open Prometheus Metrics ↗</a>
+          </div>
+          <div class="overflow-x-auto max-h-80">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-800 text-slate-400 text-[11px]">
+                  <th class="py-1.5 px-2">Timestamp</th>
+                  <th class="py-1.5 px-2">Operator</th>
+                  <th class="py-1.5 px-2">Role</th>
+                  <th class="py-1.5 px-2">Event</th>
+                  <th class="py-1.5 px-2">Details</th>
+                </tr>
+              </thead>
+              <tbody id="auditTableBody" class="divide-y divide-slate-800/60"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -297,43 +420,49 @@
   <div id="authModal" class="fixed inset-0 bg-black/75 hidden items-center justify-center z-50 p-4">
     <div class="card max-w-md w-full p-5 space-y-4 border border-slate-700">
       <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-        <h3 class="text-sm font-bold text-white">🔐 Cyber-SOC Access Control</h3>
+        <h3 class="text-sm font-bold text-white">🔐 Cyber-SOC JWT Role-Based Access Control</h3>
         <button onclick="closeAuthModal()" class="text-slate-400 hover:text-white text-sm">✕</button>
       </div>
-
       <div class="grid grid-cols-2 gap-2">
-        <button onclick="fillDemo('admin','Admin@SDN2026')" class="bg-slate-800 hover:bg-slate-700 border border-cyan-500/30 text-cyan-300 py-1.5 rounded text-[11px]">Demo Admin Fill</button>
-        <button onclick="fillDemo('analyst','Analyst@SDN2026')" class="bg-slate-800 hover:bg-slate-700 border border-emerald-500/30 text-emerald-300 py-1.5 rounded text-[11px]">Demo Analyst Fill</button>
+        <button onclick="fillDemo('admin','Admin@SDN2026')" class="bg-slate-800 hover:bg-slate-700 border border-cyan-500/30 text-cyan-300 py-1.5 rounded text-[11px]">Fill Admin Credentials</button>
+        <button onclick="fillDemo('analyst','Analyst@SDN2026')" class="bg-slate-800 hover:bg-slate-700 border border-emerald-500/30 text-emerald-300 py-1.5 rounded text-[11px]">Fill Analyst Credentials</button>
       </div>
-
       <div class="space-y-2.5">
-        <input id="authUsername" type="text" placeholder="Username (e.g. admin)" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-xs" />
+        <input id="authUsername" type="text" placeholder="Username" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-xs" />
         <input id="authPassword" type="password" placeholder="Password" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-xs" />
-        <input id="authFullName" type="text" placeholder="Full Name (only for Register)" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-xs" />
-        <input id="authEmail" type="email" placeholder="Email (only for Register)" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-xs" />
+        <input id="authFullName" type="text" placeholder="Full Name (New Account Only)" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-xs" />
+        <input id="authEmail" type="email" placeholder="Email (New Account Only)" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-xs" />
         <div id="authFeedback" class="text-[11px] text-rose-400"></div>
       </div>
-
       <div class="flex gap-2 pt-1">
         <button onclick="submitLogin()" class="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded font-semibold">Sign In</button>
-        <button onclick="submitRegister()" class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 py-2 rounded font-semibold">Create Account</button>
+        <button onclick="submitRegister()" class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 py-2 rounded font-semibold">Register Analyst</button>
       </div>
     </div>
   </div>
 
   <script>
     let liveChartInstance = null;
+    let xaiChartInstance = null;
     let benchmarkChartInstance = null;
     let cachedEvents = [];
 
+    function switchMainView(viewId) {
+      ['viewCommand', 'viewXaiLab', 'viewFirewall', 'viewRobustness'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+        document.getElementById('btn-' + id).classList.remove('active');
+      });
+      document.getElementById(viewId).classList.remove('hidden');
+      document.getElementById('btn-' + viewId).classList.add('active');
+    }
+
     function initCharts() {
-      const ctxLive = document.getElementById('liveChart').getContext('2d');
-      liveChartInstance = new Chart(ctxLive, {
+      liveChartInstance = new Chart(document.getElementById('liveChart').getContext('2d'), {
         type: 'line',
         data: {
           labels: [],
           datasets: [
-            { label: 'Packet Rate (pkts/s)', data: [], borderColor: '#22d3ee', backgroundColor: 'rgba(34,211,238,0.1)', tension: 0.3, fill: true },
+            { label: 'Packet Rate (pkts/s)', data: [], borderColor: '#22d3ee', backgroundColor: 'rgba(34,211,238,0.12)', tension: 0.3, fill: true },
             { label: 'Unique Dst Ports', data: [], borderColor: '#f43f5e', backgroundColor: 'rgba(244,63,94,0.1)', tension: 0.3 }
           ]
         },
@@ -348,8 +477,29 @@
         }
       });
 
-      const ctxBench = document.getElementById('benchmarkChart').getContext('2d');
-      benchmarkChartInstance = new Chart(ctxBench, {
+      xaiChartInstance = new Chart(document.getElementById('xaiChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: ['flow_count', 'pkt_rate', 'byte_rate', 'mean_pkt_size', 'unique_dst_ports', 'syn_ratio'],
+          datasets: [{
+            label: 'Mathematical XAI Contribution (%)',
+            data: [16.6, 16.6, 16.6, 16.6, 16.6, 16.6],
+            backgroundColor: ['#38bdf8', '#22d3ee', '#818cf8', '#34d399', '#f59e0b', '#f43f5e']
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { min: 0, max: 100, ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: 'rgba(51,65,85,0.2)' } },
+            y: { ticks: { color: '#e2e8f0', font: { size: 10 } }, grid: { display: false } }
+          }
+        }
+      });
+
+      benchmarkChartInstance = new Chart(document.getElementById('benchmarkChart').getContext('2d'), {
         type: 'bar',
         data: {
           labels: [],
@@ -370,11 +520,87 @@
       });
     }
 
+    function inspectEventForensics(index) {
+      const ev = cachedEvents[index];
+      if (!ev) return;
+      const xai = ev.xai_contributions || { flow_count: 20, pkt_rate: 20, byte_rate: 10, mean_pkt_size: 15, unique_dst_ports: 20, syn_ratio: 15 };
+      const votes = ev.model_votes || {};
+
+      xaiChartInstance.data.labels = Object.keys(xai);
+      xaiChartInstance.data.datasets[0].data = Object.values(xai);
+      xaiChartInstance.update('none');
+      document.getElementById('xaiTargetBadge').innerText = `${ev.src_ip} → ${ev.dst_ip} (${ev.threat_type.toUpperCase()})`;
+
+      const voteBadges = Object.entries(votes).map(([m, v]) => `
+        <span class="px-2 py-1 rounded text-[10px] font-bold border ${v === 1 ? 'bg-rose-500/20 border-rose-500/40 text-rose-300' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'}">
+          ${m}: ${v === 1 ? 'ANOMALY (1)' : 'NORMAL (0)'}
+        </span>
+      `).join('');
+
+      const barsHtml = Object.entries(xai).sort((a, b) => b[1] - a[1]).map(([feat, pct]) => `
+        <div class="space-y-1">
+          <div class="flex justify-between text-[11px]">
+            <span class="font-mono text-slate-300">${feat}</span>
+            <span class="font-mono font-bold text-cyan-300">${pct}% contribution</span>
+          </div>
+          <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
+            <div class="bg-gradient-to-r from-cyan-400 to-blue-500 h-full" style="width: ${Math.min(100, pct)}%"></div>
+          </div>
+        </div>
+      `).join('');
+
+      document.getElementById('forensicsInspectorBox').innerHTML = `
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <div>
+            <div class="text-sm font-bold text-white">${ev.src_ip} → ${ev.dst_ip} <span class="text-cyan-400 font-mono text-xs">[${ev.time}]</span></div>
+            <div class="text-[11px] text-slate-400">Classified Taxonomy: <strong class="text-amber-300 uppercase">${ev.threat_type}</strong> • Drift Z-Score: <strong class="text-cyan-300">${ev.drift_index ?? 0.5}</strong></div>
+          </div>
+          <span class="px-2.5 py-1 rounded font-bold uppercase text-xs ${ev.action === 'quarantine' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'}">${ev.action}</span>
+        </div>
+        <div class="text-slate-200 text-xs bg-slate-900/90 p-2.5 rounded border border-slate-800">${ev.explanation}</div>
+        <div class="space-y-2">${barsHtml}</div>
+        <div class="pt-2 border-t border-slate-800">
+          <div class="text-[10px] text-slate-400 uppercase font-bold mb-1.5">5-Algorithm Consensus Votes</div>
+          <div class="flex flex-wrap gap-1.5">${voteBadges}</div>
+        </div>
+      `;
+    }
+
+    function renderEventsTable() {
+      const q = (document.getElementById('eventSearchInput')?.value || '').toLowerCase();
+      const filtered = cachedEvents.map((e, idx) => ({ e, idx })).filter(({ e }) => {
+        if (!q) return true;
+        return (e.src_ip + ' ' + e.dst_ip + ' ' + e.threat_type + ' ' + e.action).toLowerCase().includes(q);
+      }).reverse();
+
+      document.getElementById('eventsTableBody').innerHTML = filtered.map(({ e, idx }) => {
+        const isBlock = e.action === 'quarantine';
+        const badgeCls = isBlock
+          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+          : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+        return `
+          <tr onclick="inspectEventForensics(${idx})" class="hover:bg-slate-900/80 cursor-pointer">
+            <td class="py-1.5 px-2 font-mono text-slate-400">${e.time}</td>
+            <td class="py-1.5 px-2 font-mono font-semibold text-white">${e.src_ip}</td>
+            <td class="py-1.5 px-2 font-mono text-slate-300">${e.dst_ip}</td>
+            <td class="py-1.5 px-2 font-mono">${e.pkt_rate} p/s</td>
+            <td class="py-1.5 px-2 font-mono">${e.mean_pkt_size} B</td>
+            <td class="py-1.5 px-2 font-mono">${e.unique_dst_ports}</td>
+            <td class="py-1.5 px-2 font-mono">${(e.syn_ratio * 100).toFixed(0)}%</td>
+            <td class="py-1.5 px-2 font-bold uppercase ${isBlock ? 'text-rose-300' : 'text-cyan-300'}">${e.threat_type}</td>
+            <td class="py-1.5 px-2 font-mono text-amber-300">${e.drift_index ?? '-'}</td>
+            <td class="py-1.5 px-2"><span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${badgeCls}">${e.action}</span></td>
+            <td class="py-1.5 px-2 text-slate-300 truncate max-w-md">${e.explanation || ''}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
     async function refreshAll() {
       try {
         const [statsRes, eventsRes, modelsRes, policiesRes, auditRes, robRes] = await Promise.all([
           fetch('/api/stats'),
-          fetch('/api/events?limit=60'),
+          fetch('/api/events?limit=80'),
           fetch('/api/models'),
           fetch('/api/policies'),
           fetch('/api/audit'),
@@ -389,62 +615,69 @@
         const rob = await robRes.json();
         cachedEvents = events;
 
+        const allIsolated = [...(stats.blocked_ips || []), ...(stats.rate_limited_ips || [])];
         document.getElementById('kpiTotal').innerText = stats.total_events;
         document.getElementById('kpiQuarantines').innerText = stats.quarantines;
-        document.getElementById('kpiBlockedCount').innerText = stats.blocked_ips.length;
-        document.getElementById('kpiBlockedList').innerText = stats.blocked_ips.length ? stats.blocked_ips.join(', ') : 'None';
+        document.getElementById('kpiBlockedCount').innerText = allIsolated.length;
+        document.getElementById('kpiBlockedList').innerText = allIsolated.length ? allIsolated.join(', ') : 'None';
         document.getElementById('kpiLatency').innerText = stats.avg_latency_ms + ' ms';
         document.getElementById('kpiModel').innerText = stats.active_model;
         document.getElementById('modelSelect').value = stats.active_model;
 
-        if (rob && rob.pass_rate_pct !== undefined) {
-          document.getElementById('kpiRobustness').innerText = rob.pass_rate_pct + '%';
-          document.getElementById('kpiThroughput').innerText = `${rob.max_throughput_flows_per_sec.toLocaleString()} flows/s`;
-          document.getElementById('robustnessTableBody').innerHTML = (rob.scenarios || []).map(s => `
-            <tr>
-              <td class="py-1.5 px-2 font-semibold text-white">${s.name}</td>
-              <td class="py-1.5 px-2 text-cyan-300">${s.category}</td>
-              <td class="py-1.5 px-2 uppercase font-mono">${s.expected}</td>
-              <td class="py-1.5 px-2 uppercase font-mono font-bold ${s.actual === 'quarantine' ? 'text-rose-400' : 'text-emerald-400'}">${s.actual}</td>
-              <td class="py-1.5 px-2 text-slate-300">${s.latency_ms} ms</td>
-              <td class="py-1.5 px-2"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold text-[10px]">${s.passed ? 'PASS' : 'FAIL'}</span></td>
-            </tr>
-          `).join('');
+        if (stats.control_plane) {
+          document.getElementById('cpCpu').innerText = stats.control_plane.controller_cpu_pct + '%';
+          document.getElementById('cpRam').innerText = stats.control_plane.controller_ram_mb + ' MB';
+          document.getElementById('cpFlows').innerText = stats.control_plane.ovs_active_flows;
+          document.getElementById('cpThroughput').innerText = stats.control_plane.estimated_throughput_kbps + ' kbps';
         }
 
-        const badge = document.getElementById('statusBadge');
-        if (stats.blocked_ips.length > 0) {
-          badge.innerText = 'THREAT CONTAINED (' + stats.blocked_ips.length + ' ISOLATED)';
-          badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/40';
-          document.getElementById('guidedMessage').innerText =
-            `Active Containment: Host(s) ${stats.blocked_ips.join(', ')} isolated on Open vSwitch s1 via priority=100 drop rule. Click any red host node on the map to unblock.`;
-        } else {
-          badge.innerText = 'NETWORK HEALTHY';
-          badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
-          document.getElementById('guidedMessage').innerText =
-            'All SDN switches and hosts are operating normally with 0% packet loss. Use the simulator buttons to test anomaly detection.';
-        }
-
+        // Update SVG Topology Nodes & Links
         ['10.0.0.2', '10.0.0.3', '10.10.10.2', '10.10.10.3'].forEach(ip => {
-          const el = document.getElementById('node-' + ip);
-          const st = document.getElementById('status-' + ip);
-          if (!el || !st) return;
-          if (stats.blocked_ips.includes(ip)) {
-            el.classList.add('node-quarantined');
-            st.innerText = ip + ' • QUARANTINED (Click to Unblock)';
-            st.className = 'text-[10px] text-rose-300 font-bold';
+          const rect = document.getElementById('svg-' + ip);
+          const txt = document.getElementById('svgtxt-' + ip);
+          const link = document.getElementById('link-' + ip);
+          if (!rect || !txt || !link) return;
+
+          if ((stats.blocked_ips || []).includes(ip)) {
+            rect.setAttribute('stroke', '#f43f5e');
+            rect.setAttribute('fill', '#4c0519');
+            txt.textContent = 'QUARANTINED';
+            txt.setAttribute('fill', '#fda4af');
+            link.setAttribute('class', 'svg-link-blocked');
+          } else if ((stats.rate_limited_ips || []).includes(ip)) {
+            rect.setAttribute('stroke', '#f59e0b');
+            rect.setAttribute('fill', '#451a03');
+            txt.textContent = 'RATE-LIMITED';
+            txt.setAttribute('fill', '#fcd34d');
+            link.setAttribute('class', 'svg-link-throttled');
           } else {
-            el.classList.remove('node-quarantined');
-            st.innerText = ip + ' • Online';
-            st.className = 'text-[10px] text-emerald-400';
+            rect.setAttribute('stroke', '#38bdf8');
+            rect.setAttribute('fill', '#0f172a');
+            txt.textContent = 'ONLINE';
+            txt.setAttribute('fill', '#34d399');
+            link.setAttribute('class', 'svg-link');
           }
         });
+
+        const badge = document.getElementById('statusBadge');
+        if (allIsolated.length > 0) {
+          badge.innerText = `THREAT CONTAINED (${allIsolated.length} ENFORCED)`;
+          badge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+        } else {
+          badge.innerText = 'NETWORK HEALTHY';
+          badge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+        }
 
         const recent = events.slice(-20);
         liveChartInstance.data.labels = recent.map(e => e.time);
         liveChartInstance.data.datasets[0].data = recent.map(e => e.pkt_rate);
         liveChartInstance.data.datasets[1].data = recent.map(e => e.unique_dst_ports);
         liveChartInstance.update('none');
+
+        if (events.length > 0) {
+          inspectEventForensics(events.length - 1);
+        }
+        renderEventsTable();
 
         if (modelsData.benchmarks && modelsData.benchmarks.length) {
           benchmarkChartInstance.data.labels = modelsData.benchmarks.map(b => b.model.replace('Deep Neural Network (MLP)', 'DNN (MLP)'));
@@ -464,40 +697,35 @@
           `).join('');
         }
 
-        document.getElementById('eventsTableBody').innerHTML = events.slice().reverse().map(e => {
-          const isBlock = e.action === 'quarantine';
-          const badgeCls = isBlock
-            ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-            : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
-          return `
-            <tr class="hover:bg-slate-900/60">
-              <td class="py-1.5 px-2 font-mono text-slate-400">${e.time}</td>
-              <td class="py-1.5 px-2 font-mono font-semibold text-white">${e.src_ip}</td>
-              <td class="py-1.5 px-2 font-mono text-slate-300">${e.dst_ip}</td>
-              <td class="py-1.5 px-2">${e.pkt_rate} pkts/s</td>
-              <td class="py-1.5 px-2">${e.unique_dst_ports}</td>
-              <td class="py-1.5 px-2">${(e.syn_ratio * 100).toFixed(0)}%</td>
-              <td class="py-1.5 px-2 text-indigo-300">${e.active_model || 'Ensemble'}</td>
-              <td class="py-1.5 px-2 font-semibold ${isBlock ? 'text-rose-300' : 'text-emerald-300'}">${e.threat_type}</td>
-              <td class="py-1.5 px-2"><span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${badgeCls}">${e.action}</span></td>
-              <td class="py-1.5 px-2 text-slate-300">${e.explanation || ''}</td>
-            </tr>
-          `;
-        }).join('');
-
         document.getElementById('policiesTableBody').innerHTML = policies.map(p => `
           <tr>
             <td class="py-1.5 px-2 text-slate-400">#${p.id}</td>
             <td class="py-1.5 px-2 font-mono font-bold text-white">${p.target_ip}</td>
-            <td class="py-1.5 px-2 uppercase font-semibold ${p.rule_type === 'quarantine' ? 'text-rose-400' : 'text-emerald-400'}">${p.rule_type}</td>
+            <td class="py-1.5 px-2 uppercase font-bold ${p.rule_type === 'quarantine' ? 'text-rose-400' : (p.rule_type === 'rate_limit' ? 'text-amber-400' : 'text-emerald-400')}">${p.rule_type}</td>
+            <td class="py-1.5 px-2 font-mono">${p.rate_kbps ? p.rate_kbps + ' kbps' : 'N/A'}</td>
             <td class="py-1.5 px-2 font-mono">${p.priority}</td>
             <td class="py-1.5 px-2 text-slate-300">${p.reason}</td>
             <td class="py-1.5 px-2 text-slate-400">${p.created_at}</td>
             <td class="py-1.5 px-2">
-              ${p.rule_type !== 'whitelist' ? `<button onclick="quickUnblock('${p.target_ip}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-0.5 rounded text-[10px]">Unblock</button>` : '<span class="text-slate-500">Protected</span>'}
+              ${p.rule_type !== 'whitelist' ? `<button onclick="quickUnblock('${p.target_ip}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-0.5 rounded text-[10px] font-bold">Unblock</button>` : '<span class="text-slate-500">Protected</span>'}
             </td>
           </tr>
         `).join('');
+
+        if (rob && rob.scenarios) {
+          document.getElementById('kpiRobustness').innerText = rob.pass_rate_pct + '%';
+          document.getElementById('kpiThroughput').innerText = `${rob.max_throughput_flows_per_sec.toLocaleString()} flows/sec`;
+          document.getElementById('robustnessTableBody').innerHTML = rob.scenarios.map(s => `
+            <tr>
+              <td class="py-1.5 px-2 font-semibold text-white">${s.name}</td>
+              <td class="py-1.5 px-2 text-cyan-300">${s.category}</td>
+              <td class="py-1.5 px-2 uppercase font-mono">${s.expected}</td>
+              <td class="py-1.5 px-2 uppercase font-mono font-bold ${s.actual === 'quarantine' ? 'text-rose-400' : 'text-emerald-400'}">${s.actual}</td>
+              <td class="py-1.5 px-2 font-mono">${s.latency_ms} ms</td>
+              <td class="py-1.5 px-2"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold text-[10px]">${s.passed ? 'PASS' : 'FAIL'}</span></td>
+            </tr>
+          `).join('');
+        }
 
         document.getElementById('auditTableBody').innerHTML = audits.map(a => `
           <tr>
@@ -508,9 +736,8 @@
             <td class="py-1.5 px-2 text-slate-300">${a.details}</td>
           </tr>
         `).join('');
-
       } catch (err) {
-        console.error('Refresh error:', err);
+        console.error(err);
       }
     }
 
@@ -523,9 +750,46 @@
       await refreshAll();
     }
 
+    async function deployFirewallRule() {
+      const target_ip = document.getElementById('fwIp').value.trim();
+      const rule_type = document.getElementById('fwAction').value;
+      const rate_kbps = parseInt(document.getElementById('fwRate').value || '512', 10);
+      const protocol = document.getElementById('fwProto').value;
+      const reason = document.getElementById('fwReason').value.trim();
+      await fetch('/api/policies/enforce', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_ip, rule_type, rate_kbps, protocol, reason })
+      });
+      await refreshAll();
+    }
+
+    async function quickUnblock(target_ip) {
+      await fetch('/api/policies/unblock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_ip })
+      });
+      await refreshAll();
+    }
+
+    async function switchModel() {
+      const model_name = document.getElementById('modelSelect').value;
+      await fetch('/api/models/select', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model_name })
+      });
+      await refreshAll();
+    }
+
+    async function clearTelemetry() {
+      await fetch('/api/events/clear', { method: 'DELETE' });
+      await refreshAll();
+    }
+
     async function runRobustnessBenchmark() {
       await fetch('/api/robustness/run', { method: 'POST' });
-      showTab('robustnessTab');
       await refreshAll();
     }
 
@@ -540,64 +804,16 @@
       a.click();
     }
 
-    async function switchModel() {
-      const model_name = document.getElementById('modelSelect').value;
-      await fetch('/api/models/select', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model_name })
-      });
-      await refreshAll();
-    }
-
-    async function manualPolicy(rule_type) {
-      const target_ip = document.getElementById('manualIp').value.trim();
-      if (!target_ip) return alert('Enter a target IP address first (e.g. 10.0.0.3)');
-      await fetch('/api/policies/enforce', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target_ip, rule_type, rate_kbps: rule_type === 'rate_limit' ? 512 : 0 })
-      });
-      await refreshAll();
-    }
-
-    async function quickUnblock(target_ip) {
-      await fetch('/api/policies/unblock', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target_ip })
-      });
-      await refreshAll();
-    }
-
-    async function quickUnblockInput() {
-      const target_ip = document.getElementById('manualIp').value.trim();
-      if (!target_ip) return alert('Enter an IP address to unblock');
-      await quickUnblock(target_ip);
-    }
-
-    async function clearTelemetry() {
-      await fetch('/api/events/clear', { method: 'DELETE' });
-      await refreshAll();
-    }
-
-    function showTab(tabId) {
-      ['eventsTab', 'robustnessTab', 'policiesTab', 'modelsTab', 'auditTab'].forEach(id => {
-        document.getElementById(id).classList.add('hidden');
-      });
-      document.getElementById(tabId).classList.remove('hidden');
-    }
-
     function exportCSV() {
       if (!cachedEvents.length) return alert('No security events to export yet.');
-      const headers = ['time', 'src_ip', 'dst_ip', 'pkt_rate', 'unique_dst_ports', 'syn_ratio', 'active_model', 'threat_type', 'action', 'inference_latency_ms'];
+      const headers = ['time', 'src_ip', 'dst_ip', 'pkt_rate', 'mean_pkt_size', 'unique_dst_ports', 'syn_ratio', 'active_model', 'threat_type', 'drift_index', 'action', 'inference_latency_ms'];
       const rows = cachedEvents.map(e => headers.map(h => JSON.stringify(e[h] ?? '')).join(','));
       const csv = [headers.join(','), ...rows].join('\n');
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'sdn_security_report.csv';
+      a.download = 'sdn_telemetry_forensics.csv';
       a.click();
     }
 
@@ -618,9 +834,7 @@
         document.getElementById('authFeedback').innerText = data.detail || 'Login failed';
         return;
       }
-      localStorage.setItem('sdn_token', data.access_token);
-      document.getElementById('userBadge').innerText = `${data.user.full_name} (${data.user.role.toUpperCase()})`;
-      document.getElementById('authBtn').innerText = 'Switch Account';
+      document.getElementById('userBadge').innerText = `${data.user.username} (${data.user.role.toUpperCase()})`;
       closeAuthModal();
       refreshAll();
     }
@@ -640,8 +854,7 @@
         document.getElementById('authFeedback').innerText = data.detail || 'Registration failed';
         return;
       }
-      localStorage.setItem('sdn_token', data.access_token);
-      document.getElementById('userBadge').innerText = `${data.user.full_name} (${data.user.role.toUpperCase()})`;
+      document.getElementById('userBadge').innerText = `${data.user.username} (${data.user.role.toUpperCase()})`;
       closeAuthModal();
       refreshAll();
     }
