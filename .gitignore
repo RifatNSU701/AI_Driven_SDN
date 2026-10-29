@@ -1,12 +1,25 @@
-﻿# Ignore local virtual environment and Python cache
+﻿# Python virtual environment and cache
 venv/
 __pycache__/
 *.pyc
 
-# Ignore local SQLite database files (contains user accounts & hashes)
+# Local SQLite database files
 data/*.db
 data/*.db-journal
 
-# Ignore agent/IDE temp files
+# PyInstaller desktop build artifacts
+build/
+dist/
+*.spec
+
+# Flutter & Android Studio build caches
+mobile_app/build/
+mobile_app/.dart_tool/
+mobile_app/.idea/
+mobile_app/android/.gradle/
+mobile_app/android/local.properties
+
+# IDE / Agent temp folders
 .agents/
+.idea/
 .DS_Store

@@ -1,0 +1,49 @@
+name: Build Multi-Platform Release Suite
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  verify-backend-and-ml:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Initialize Auth DB, Train All 5 Models & Run Robustness Suite
+        run: |
+          python -m src.auth
+          python src/train_models.py
+          python src/robustness_suite.py
+
+  build-desktop-executables:
+    needs: verify-backend-and-ml
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Build Standalone Desktop App
+        run: python scripts/build_desktop.py
+      - name: Upload Desktop Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AI_SDN_Desktop_${{ matrix.os }}
+          path: dist/AI_SDN_CyberSOC

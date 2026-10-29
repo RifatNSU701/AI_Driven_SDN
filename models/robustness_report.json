@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-10-29 00:25:10",
+  "timestamp": "2026-10-29 09:24:04",
   "total_scenarios": 9,
   "passed_scenarios": 9,
   "pass_rate_pct": 100.0,
-  "batch_1000_flows_ms": 7.16,
-  "max_throughput_flows_per_sec": 139593,
+  "batch_1000_flows_ms": 8.48,
+  "max_throughput_flows_per_sec": 117758,
   "scenarios": [
     {
       "name": "Normal Enterprise Web Flow (h2 -> h1)",
@@ -12,7 +12,7 @@
       "expected": "allow",
       "actual": "allow",
       "passed": true,
-      "latency_ms": 127.267,
+      "latency_ms": 364.24,
       "votes": {
         "Random Forest": 0,
         "Gradient Boosting": 0,
@@ -27,7 +27,7 @@
       "expected": "allow",
       "actual": "allow",
       "passed": true,
-      "latency_ms": 13.87,
+      "latency_ms": 20.574,
       "votes": {
         "Random Forest": 0,
         "Gradient Boosting": 0,
@@ -42,7 +42,7 @@
       "expected": "allow",
       "actual": "allow",
       "passed": true,
-      "latency_ms": 13.043,
+      "latency_ms": 25.33,
       "votes": {
         "Random Forest": 0,
         "Gradient Boosting": 0,
@@ -57,7 +57,7 @@
       "expected": "allow",
       "actual": "allow",
       "passed": true,
-      "latency_ms": 13.162,
+      "latency_ms": 15.608,
       "votes": {
         "Random Forest": 0,
         "Gradient Boosting": 0,
@@ -72,7 +72,7 @@
       "expected": "quarantine",
       "actual": "quarantine",
       "passed": true,
-      "latency_ms": 13.011,
+      "latency_ms": 13.535,
       "votes": {
         "Random Forest": 1,
         "Gradient Boosting": 1,
@@ -87,7 +87,7 @@
       "expected": "quarantine",
       "actual": "quarantine",
       "passed": true,
-      "latency_ms": 13.575,
+      "latency_ms": 13.629,
       "votes": {
         "Random Forest": 1,
         "Gradient Boosting": 1,
@@ -102,7 +102,7 @@
       "expected": "quarantine",
       "actual": "quarantine",
       "passed": true,
-      "latency_ms": 13.49,
+      "latency_ms": 17.503,
       "votes": {
         "Random Forest": 1,
         "Gradient Boosting": 1,
@@ -117,7 +117,7 @@
       "expected": "quarantine",
       "actual": "quarantine",
       "passed": true,
-      "latency_ms": 13.035,
+      "latency_ms": 16.221,
       "votes": {
         "Random Forest": 1,
         "Gradient Boosting": 1,
@@ -132,7 +132,7 @@
       "expected": "quarantine",
       "actual": "quarantine",
       "passed": true,
-      "latency_ms": 13.101,
+      "latency_ms": 14.454,
       "votes": {
         "Random Forest": 1,
         "Gradient Boosting": 1,
