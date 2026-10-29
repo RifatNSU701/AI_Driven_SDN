@@ -1,0 +1,18 @@
+{
+  "means": {
+    "flow_count": 4.0163,
+    "pkt_rate": 147.8565,
+    "byte_rate": 201949.9951,
+    "mean_pkt_size": 516.9271,
+    "unique_dst_ports": 1.6817,
+    "syn_ratio": 0.0826
+  },
+  "stds": {
+    "flow_count": 1.928,
+    "pkt_rate": 210.9386,
+    "byte_rate": 306871.55,
+    "mean_pkt_size": 591.5563,
+    "unique_dst_ports": 0.6652,
+    "syn_ratio": 0.041
+  }
+}

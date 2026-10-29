@@ -50,5 +50,41 @@
     "explanation": "Flagged due to abnormal destination port fan-out (35 ports), elevated TCP SYN ratio (96%), flood-level packet rate (340 pkts/s), small probe packet size (42 B). Confirmed by 5/5 detectors (Baseline Threshold, Isolation Forest, Random Forest, Gradient Boosting, Deep Neural Network (MLP)).",
     "action": "quarantine",
     "inference_latency_ms": 23.836
+  },
+  {
+    "id": 3,
+    "time": "16:15:41",
+    "src_ip": "10.0.0.2",
+    "dst_ip": "10.0.0.4",
+    "flow_count": 4,
+    "pkt_rate": 420.0,
+    "byte_rate": 609000.0,
+    "mean_pkt_size": 1450.0,
+    "unique_dst_ports": 2,
+    "syn_ratio": 0.04,
+    "active_model": "Ensemble Voting (All 5 Models)",
+    "rf_prediction": 0,
+    "rf_confidence": 1.0,
+    "iso_prediction": 0,
+    "model_votes": {
+      "Baseline Threshold": 0,
+      "Isolation Forest": 0,
+      "Random Forest": 0,
+      "Gradient Boosting": 0,
+      "Deep Neural Network (MLP)": 0
+    },
+    "xai_contributions": {
+      "flow_count": 0.57,
+      "pkt_rate": 12.25,
+      "byte_rate": 9.27,
+      "mean_pkt_size": 46.33,
+      "unique_dst_ports": 5.46,
+      "syn_ratio": 26.12
+    },
+    "drift_index": 0.953,
+    "threat_type": "high_vol_benign",
+    "explanation": "Allowed (High-Volume Benign Burst): Large packet payload (1450 B) and low SYN ratio (4.0%) confirm legitimate bulk transfer despite 420 pkts/s.",
+    "action": "allow",
+    "inference_latency_ms": 148.254
   }
 ]

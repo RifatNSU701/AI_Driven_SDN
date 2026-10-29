@@ -1,27 +1,19 @@
 [
   {
     "model": "Baseline Threshold",
-    "precision": 0.655,
-    "recall": 1.0,
-    "f1_score": 0.7916,
-    "false_positive_rate": 0.3511,
-    "latency_ms_per_sample": 0.0171,
-    "tp": 600,
-    "fp": 316,
-    "tn": 584,
-    "fn": 0
+    "precision": 1.0,
+    "recall": 0.8,
+    "f1_score": 0.8889,
+    "false_positive_rate": 0.0,
+    "latency_ms_per_sample": 0.0006
   },
   {
     "model": "Isolation Forest",
-    "precision": 0.6978,
-    "recall": 0.7467,
-    "f1_score": 0.7214,
-    "false_positive_rate": 0.2156,
-    "latency_ms_per_sample": 0.0089,
-    "tp": 448,
-    "fp": 194,
-    "tn": 706,
-    "fn": 152
+    "precision": 0.6562,
+    "recall": 0.626,
+    "f1_score": 0.6407,
+    "false_positive_rate": 0.2187,
+    "latency_ms_per_sample": 0.0163
   },
   {
     "model": "Random Forest",
@@ -29,11 +21,7 @@
     "recall": 1.0,
     "f1_score": 1.0,
     "false_positive_rate": 0.0,
-    "latency_ms_per_sample": 0.0053,
-    "tp": 600,
-    "fp": 0,
-    "tn": 900,
-    "fn": 0
+    "latency_ms_per_sample": 0.0402
   },
   {
     "model": "Gradient Boosting",
@@ -41,11 +29,7 @@
     "recall": 1.0,
     "f1_score": 1.0,
     "false_positive_rate": 0.0,
-    "latency_ms_per_sample": 0.0007,
-    "tp": 600,
-    "fp": 0,
-    "tn": 900,
-    "fn": 0
+    "latency_ms_per_sample": 0.001
   },
   {
     "model": "Deep Neural Network (MLP)",
@@ -53,10 +37,6 @@
     "recall": 1.0,
     "f1_score": 1.0,
     "false_positive_rate": 0.0,
-    "latency_ms_per_sample": 0.0008,
-    "tp": 600,
-    "fp": 0,
-    "tn": 900,
-    "fn": 0
+    "latency_ms_per_sample": 0.0007
   }
 ]
