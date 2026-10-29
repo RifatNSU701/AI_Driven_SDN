@@ -1,4 +1,4 @@
-name: Build Multi-Platform Release Suite
+name: Build Multi-Platform Production Release Suite
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  verify-backend-and-ml:
+  verify-ml-and-backend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,15 +17,17 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Initialize Auth DB, Train All 5 Models & Run Robustness Suite
+          pip install -r requirements.txt httpx
+      - name: Generate 5,000-Flow Dataset, Train 6 Models & Run 8-Subsystem Verification
         run: |
+          python scripts/generate_production_dataset.py
           python -m src.auth
           python src/train_models.py
           python src/robustness_suite.py
+          python tests/test_production_suite.py
 
-  build-desktop-executables:
-    needs: verify-backend-and-ml
+  build-desktop-packages:
+    needs: verify-ml-and-backend
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
@@ -36,14 +38,40 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install dependencies
+      - name: Install dependencies & Train Models
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Build Standalone Desktop App
+          python scripts/generate_production_dataset.py
+          python src/train_models.py
+      - name: Build Native Executable (.exe / .bin / .dmg)
         run: python scripts/build_desktop.py
-      - name: Upload Desktop Artifact
+      - name: Upload Native Desktop Package
         uses: actions/upload-artifact@v4
         with:
-          name: AI_SDN_Desktop_${{ matrix.os }}
-          path: dist/AI_SDN_CyberSOC
+          name: AI_SDN_CyberSOC_Desktop_${{ matrix.os }}
+          path: dist/*
+
+  build-android-apk:
+    needs: verify-ml-and-backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: "zulu"
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+      - name: Build Release APK
+        working-directory: mobile_app
+        run: |
+          flutter create --project-name sdn_threat_mobile .
+          flutter pub get
+          flutter build apk --release
+      - name: Upload Android Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AI_SDN_CyberSOC_Android_APK
+          path: mobile_app/build/app/outputs/flutter-apk/app-release.apk
