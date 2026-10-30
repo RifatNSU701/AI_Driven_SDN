@@ -32,7 +32,9 @@ def build_production_packages():
 
     if sys.platform.startswith("win"):
         exe_src = os.path.join("dist", "AI_SDN_CyberSOC.exe")
-        zip_path = shutil.make_archive(os.path.join("dist", "AI_SDN_CyberSOC_Windows_x64"), "zip", "dist", "AI_SDN_CyberSOC.exe")
+        zip_path = shutil.make_archive(
+            os.path.join("dist", "AI_SDN_CyberSOC_Windows_x64"), "zip", "dist", "AI_SDN_CyberSOC.exe"
+        )
         print(f"[+] Windows Native Executable : {exe_src}")
         print(f"[+] Windows Release Archive   : {zip_path}")
     elif sys.platform == "darwin":

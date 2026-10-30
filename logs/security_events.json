@@ -230,5 +230,77 @@
     "explanation": "Classified as TCP_SYN_FLOOD: Driven by flow surge (60 flows) (62.24% XAI weight) and port fan-out (38 dst ports) (19.64% XAI weight). Consensus: 5/5 models (Baseline Threshold, Isolation Forest, Random Forest, Gradient Boosting, Deep Neural Network (MLP)).",
     "action": "quarantine",
     "inference_latency_ms": 100.585
+  },
+  {
+    "id": 8,
+    "time": "09:41:08",
+    "src_ip": "10.0.0.2",
+    "dst_ip": "10.0.0.4",
+    "flow_count": 4,
+    "pkt_rate": 420.0,
+    "byte_rate": 609000.0,
+    "mean_pkt_size": 1450.0,
+    "unique_dst_ports": 2,
+    "syn_ratio": 0.04,
+    "active_model": "Ensemble Voting (All 5 Models)",
+    "rf_prediction": 0,
+    "rf_confidence": 1.0,
+    "iso_prediction": 0,
+    "model_votes": {
+      "Baseline Threshold": 0,
+      "Isolation Forest": 0,
+      "Random Forest": 0,
+      "Gradient Boosting": 0,
+      "Deep Neural Network (MLP)": 0
+    },
+    "xai_contributions": {
+      "flow_count": 0.57,
+      "pkt_rate": 12.25,
+      "byte_rate": 9.27,
+      "mean_pkt_size": 46.33,
+      "unique_dst_ports": 5.46,
+      "syn_ratio": 26.12
+    },
+    "drift_index": 0.953,
+    "threat_type": "high_vol_benign",
+    "explanation": "Allowed (High-Volume Benign Burst): Large packet payload (1450 B) and low SYN ratio (4.0%) confirm legitimate bulk transfer despite 420 pkts/s.",
+    "action": "allow",
+    "inference_latency_ms": 188.57
+  },
+  {
+    "id": 9,
+    "time": "09:41:08",
+    "src_ip": "10.10.10.2",
+    "dst_ip": "10.10.10.1",
+    "flow_count": 60,
+    "pkt_rate": 340.0,
+    "byte_rate": 15300.0,
+    "mean_pkt_size": 45.0,
+    "unique_dst_ports": 38,
+    "syn_ratio": 0.96,
+    "active_model": "Ensemble Voting (All 5 Models)",
+    "rf_prediction": 1,
+    "rf_confidence": 1.0,
+    "iso_prediction": 1,
+    "model_votes": {
+      "Baseline Threshold": 1,
+      "Isolation Forest": 1,
+      "Random Forest": 1,
+      "Gradient Boosting": 1,
+      "Deep Neural Network (MLP)": 1
+    },
+    "xai_contributions": {
+      "flow_count": 62.24,
+      "pkt_rate": 0.27,
+      "byte_rate": 0.13,
+      "mean_pkt_size": 0.74,
+      "unique_dst_ports": 19.64,
+      "syn_ratio": 16.97
+    },
+    "drift_index": 17.892,
+    "threat_type": "tcp_syn_flood",
+    "explanation": "Classified as TCP_SYN_FLOOD: Driven by flow surge (60 flows) (62.24% XAI weight) and port fan-out (38 dst ports) (19.64% XAI weight). Consensus: 5/5 models (Baseline Threshold, Isolation Forest, Random Forest, Gradient Boosting, Deep Neural Network (MLP)).",
+    "action": "quarantine",
+    "inference_latency_ms": 106.227
   }
 ]

@@ -3,70 +3,65 @@ import sys
 import time
 import socket
 import threading
-import subprocess
 import webbrowser
+import urllib.request
 import uvicorn
+
+# Ensure bundled PyInstaller onefile assets (models/ and src/web/) are found
+if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+    os.chdir(sys._MEIPASS)
+
 from src.api_server import app
 
-HOST = "127.0.0.1"
-PORT = 8000
-APP_URL = f"http://{HOST}:{PORT}"
 
-
-def is_port_in_use(host: str, port: int) -> bool:
+def is_port_in_use(port: int = 8000) -> bool:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.settimeout(0.5)
-        return s.connect_ex((host, port)) == 0
+        return s.connect_ex(("127.0.0.1", port)) == 0
 
 
-def start_backend():
-    if not is_port_in_use(HOST, PORT):
-        uvicorn.run(app, host="0.0.0.0", port=PORT, log_level="warning")
+def start_api_server():
+    if not is_port_in_use(8000):
+        uvicorn.run(app, host="0.0.0.0", port=8000, log_level="warning")
 
 
-def launch_desktop_gui():
-    backend_thread = threading.Thread(target=start_backend, daemon=True)
-    backend_thread.start()
+def wait_for_server(url: str = "http://127.0.0.1:8000/health", timeout: float = 10.0):
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            with urllib.request.urlopen(url, timeout=1.0) as resp:
+                if resp.status == 200:
+                    return True
+        except Exception:
+            time.sleep(0.25)
+    return False
 
-    for _ in range(30):
-        if is_port_in_use(HOST, PORT):
-            break
-        time.sleep(0.2)
 
-    # 1. Try native PyWebView window (Windows / Linux / macOS)
+def launch_desktop_suite():
+    api_thread = threading.Thread(target=start_api_server, daemon=True)
+    api_thread.start()
+    wait_for_server()
+
+    url = "http://127.0.0.1:8000"
     try:
         import webview
-        webview.create_window(
-            title="AI-Powered SDN Threat Protection — Cyber-SOC Desktop Suite",
-            url=APP_URL,
-            width=1440,
-            height=860,
-            min_size=(1024, 680),
+        window = webview.create_window(
+            title="AI-SDN Cyber-SOC v3.0 — Enterprise Threat Protection Suite",
+            url=url,
+            width=1480,
+            height=920,
+            min_size=(1100, 720),
+            background_color="#050811",
         )
         webview.start()
-        return
-    except ImportError:
-        pass
-
-    # 2. Fallback: Native frameless Desktop App Window via Edge/Chrome (--app mode)
-    if sys.platform.startswith("win"):
-        for browser_cmd in [
-            ["cmd", "/c", "start", "msedge", f"--app={APP_URL}"],
-            ["cmd", "/c", "start", "chrome", f"--app={APP_URL}"],
-        ]:
-            try:
-                subprocess.run(browser_cmd, check=True)
-                print(f"[+] Launched Desktop GUI Window at {APP_URL} (Press Ctrl+C to exit)")
-                while True:
-                    time.sleep(1)
-            except Exception:
-                continue
-
-    webbrowser.open(APP_URL)
-    print(f"[+] Cyber-SOC Portal running at {APP_URL} (Press Ctrl+C to exit)")
-    while True:
-        time.sleep(1)
+    except Exception:
+        print(f"[+] Cyber-SOC Portal active at {url}")
+        webbrowser.open(url)
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            pass
 
 
 if __name__ == "__main__":
-    launch_desktop_gui()
+    launch_desktop_suite()
