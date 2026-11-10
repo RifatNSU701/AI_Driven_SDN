@@ -1,7 +1,7 @@
 [
   {
     "id": 1,
-    "time": "23:06:48",
+    "time": "23:19:15",
     "src_ip": "10.0.0.2",
     "dst_ip": "10.0.0.4",
     "flow_count": 4,
@@ -33,11 +33,11 @@
     "threat_type": "high_vol_benign",
     "explanation": "Allowed (High-Volume Benign Burst): Large packet payload (1450 B) and low SYN ratio (4.0%) confirm legitimate bulk transfer despite 420 pkts/s.",
     "action": "allow",
-    "inference_latency_ms": 203.553
+    "inference_latency_ms": 181.314
   },
   {
     "id": 2,
-    "time": "23:06:48",
+    "time": "23:19:15",
     "src_ip": "10.10.10.2",
     "dst_ip": "10.10.10.1",
     "flow_count": 60,
@@ -69,11 +69,11 @@
     "threat_type": "tcp_syn_flood",
     "explanation": "Classified as TCP_SYN_FLOOD: Driven by flow surge (60 flows) (62.24% XAI weight) and port fan-out (38 dst ports) (19.64% XAI weight). Consensus: 5/5 models (Baseline Threshold, Isolation Forest, Random Forest, Gradient Boosting, Deep Neural Network (MLP)).",
     "action": "quarantine",
-    "inference_latency_ms": 111.958
+    "inference_latency_ms": 105.049
   },
   {
     "id": 3,
-    "time": "23:06:48",
+    "time": "23:19:15",
     "src_ip": "10.0.0.2",
     "dst_ip": "10.0.0.1",
     "flow_count": 2,
@@ -105,11 +105,11 @@
     "threat_type": "benign",
     "explanation": "Allowed (Baseline Normal): 7.1 pkts/s across 1 port(s) within normal Z-score bounds.",
     "action": "allow",
-    "inference_latency_ms": 109.487
+    "inference_latency_ms": 116.091
   },
   {
     "id": 4,
-    "time": "23:06:48",
+    "time": "23:19:15",
     "src_ip": "10.0.0.2",
     "dst_ip": "10.0.0.4",
     "flow_count": 3,
@@ -141,11 +141,11 @@
     "threat_type": "high_vol_benign",
     "explanation": "Allowed (High-Volume Benign Burst): Large packet payload (1450 B) and low SYN ratio (0.9%) confirm legitimate bulk transfer despite 420 pkts/s.",
     "action": "allow",
-    "inference_latency_ms": 101.903
+    "inference_latency_ms": 106.593
   },
   {
     "id": 5,
-    "time": "23:06:48",
+    "time": "23:19:15",
     "src_ip": "10.0.0.3",
     "dst_ip": "10.0.0.1",
     "flow_count": 65,
@@ -177,11 +177,11 @@
     "threat_type": "port_scan",
     "explanation": "Classified as PORT_SCAN: Driven by flow surge (65 flows) (61.66% XAI weight) and port fan-out (45 dst ports) (21.31% XAI weight). Consensus: 5/5 models (Baseline Threshold, Isolation Forest, Random Forest, Gradient Boosting, Deep Neural Network (MLP)).",
     "action": "quarantine",
-    "inference_latency_ms": 110.079
+    "inference_latency_ms": 116.642
   },
   {
     "id": 6,
-    "time": "23:06:48",
+    "time": "23:19:15",
     "src_ip": "10.10.10.2",
     "dst_ip": "10.10.10.1",
     "flow_count": 340,
@@ -213,6 +213,6 @@
     "threat_type": "tcp_syn_flood",
     "explanation": "Classified as TCP_SYN_FLOOD: Driven by flow surge (340 flows) (91.01% XAI weight) and port fan-out (35 dst ports) (4.39% XAI weight). Consensus: 5/5 models (Baseline Threshold, Isolation Forest, Random Forest, Gradient Boosting, Deep Neural Network (MLP)).",
     "action": "quarantine",
-    "inference_latency_ms": 105.415
+    "inference_latency_ms": 103.611
   }
 ]
