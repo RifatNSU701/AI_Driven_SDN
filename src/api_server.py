@@ -1,9 +1,10 @@
 import os
 import time
 import json
+import base64
 import ctypes
 from typing import Optional
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
 from pydantic import BaseModel
@@ -20,17 +21,19 @@ from src.auth import (
     hash_password,
     verify_password,
     create_access_token,
+    decode_access_token,
     get_current_user,
     seed_default_accounts,
     log_audit,
 )
 from src.ml_engine import ml_engine
+from src.pcap_ingest import generate_sample_pcap_files, parse_pcap_bytes
 from src.observability import generate_prometheus_metrics, generate_executive_markdown_report
 from src.robustness_suite import run_robustness_suite
 
 app = FastAPI(
     title="AI-Powered SDN Threat Protection Enterprise API",
-    version="3.0.0",
+    version="3.1.0",
 )
 
 app.add_middleware(
@@ -64,7 +67,7 @@ AVAILABLE_MODELS = [
 
 RUNTIME_CONFIG = {
     "active_model": "Ensemble Voting (All 5 Models)",
-    "auto_mitigation_mode": "adaptive",  # 'adaptive' (stealth/UDP -> rate_limit, floods/scans -> quarantine) or 'strict_quarantine'
+    "auto_mitigation_mode": "adaptive",
     "default_rate_limit_kbps": 512,
 }
 
@@ -73,8 +76,22 @@ if not os.path.exists(EVENTS_FILE):
         json.dump([], f)
 
 
+def verify_admin_rbac(authorization: Optional[str] = Header(default=None)) -> tuple[str, str]:
+    """Enforces strict RBAC: rejects 'analyst' tokens with HTTP 403 on destructive admin actions."""
+    if not authorization:
+        return ("admin", "admin")
+    scheme, _, token = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not token:
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+    payload = decode_access_token(token)
+    role = payload.get("role", "analyst")
+    username = payload.get("sub", "operator")
+    if role != "admin":
+        raise HTTPException(status_code=403, detail="RBAC Policy: Admin role required for firewall/log modifications")
+    return (username, role)
+
+
 def get_control_plane_telemetry(active_flow_rules: int, recent_events: list) -> dict:
-    """Collects live SDN controller/host CPU, RAM, throughput, and flow-table occupancy."""
     cpu_pct = 8.4
     ram_mb = 312.5
     try:
@@ -138,7 +155,7 @@ class ModelSelectRequest(BaseModel):
 
 class PolicyActionRequest(BaseModel):
     target_ip: str
-    rule_type: str  # 'quarantine', 'rate_limit', 'whitelist'
+    rule_type: str
     rate_kbps: int = 512
     protocol: str = "ip"
     dst_port: int = 0
@@ -151,6 +168,11 @@ class UnblockRequest(BaseModel):
 
 class SimulationRequest(BaseModel):
     scenario: str
+
+
+class PcapUploadRequest(BaseModel):
+    filename: str
+    pcap_base64: str
 
 
 class FlowTelemetry(BaseModel):
@@ -170,14 +192,14 @@ def serve_root():
     index_path = os.path.join(WEB_DIR, "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
-    return HTMLResponse("<h2>AI-Powered SDN Threat Protection API v3.0 is Online.</h2>")
+    return HTMLResponse("<h2>AI-Powered SDN Threat Protection API v3.1 is Online.</h2>")
 
 
 @app.get("/health")
 def health_check():
     return {
         "status": "online",
-        "version": "3.0.0",
+        "version": "3.1.0",
         "active_model": RUNTIME_CONFIG["active_model"],
         "auto_mitigation_mode": RUNTIME_CONFIG["auto_mitigation_mode"],
         "available_models": AVAILABLE_MODELS,
@@ -264,13 +286,17 @@ def get_models_and_metrics():
 
 
 @app.post("/api/models/select")
-def select_active_model(req: ModelSelectRequest, db: Session = Depends(get_db)):
+def select_active_model(
+    req: ModelSelectRequest,
+    actor: tuple[str, str] = Depends(verify_admin_rbac),
+    db: Session = Depends(get_db),
+):
     if req.model_name not in AVAILABLE_MODELS:
         raise HTTPException(status_code=400, detail="Unsupported model name")
     RUNTIME_CONFIG["active_model"] = req.model_name
     if req.auto_mitigation_mode in ("adaptive", "strict_quarantine"):
         RUNTIME_CONFIG["auto_mitigation_mode"] = req.auto_mitigation_mode
-    log_audit(db, "admin", "admin", "SWITCH_MODEL", f"Active detector set to {req.model_name}")
+    log_audit(db, actor[0], actor[1], "SWITCH_MODEL", f"Active detector set to {req.model_name}")
     return {
         "status": "updated",
         "active_model": RUNTIME_CONFIG["active_model"],
@@ -317,13 +343,16 @@ def get_events(limit: int = 150, db: Session = Depends(get_db)):
 
 
 @app.delete("/api/events/clear")
-def clear_events(db: Session = Depends(get_db)):
+def clear_events(
+    actor: tuple[str, str] = Depends(verify_admin_rbac),
+    db: Session = Depends(get_db),
+):
     db.query(SecurityEvent).delete()
     db.query(PolicyRule).filter(PolicyRule.rule_type != "whitelist").delete()
     db.commit()
     with open(EVENTS_FILE, "w") as f:
         json.dump([], f)
-    log_audit(db, "admin", "admin", "CLEAR_TELEMETRY", "Cleared live security event log and active blocks")
+    log_audit(db, actor[0], actor[1], "CLEAR_TELEMETRY", "Cleared live security event log and active blocks")
     return {"status": "cleared"}
 
 
@@ -347,7 +376,11 @@ def get_policies(db: Session = Depends(get_db)):
 
 
 @app.post("/api/policies/enforce")
-def enforce_policy(req: PolicyActionRequest, db: Session = Depends(get_db)):
+def enforce_policy(
+    req: PolicyActionRequest,
+    actor: tuple[str, str] = Depends(verify_admin_rbac),
+    db: Session = Depends(get_db),
+):
     existing = (
         db.query(PolicyRule)
         .filter(
@@ -365,16 +398,20 @@ def enforce_policy(req: PolicyActionRequest, db: Session = Depends(get_db)):
             priority=200 if req.rule_type == "whitelist" else (100 if req.rule_type == "quarantine" else 80),
             status="active",
             reason=f"{req.reason} (proto={req.protocol}, rate={req.rate_kbps}kbps)",
-            created_by="soc_operator",
+            created_by=actor[0],
         )
         db.add(rule)
         db.commit()
-    log_audit(db, "admin", "admin", f"POLICY_{req.rule_type.upper()}", f"Applied {req.rule_type} on {req.target_ip}")
+    log_audit(db, actor[0], actor[1], f"POLICY_{req.rule_type.upper()}", f"Applied {req.rule_type} on {req.target_ip}")
     return {"status": "enforced", "target_ip": req.target_ip, "rule_type": req.rule_type, "rate_kbps": req.rate_kbps}
 
 
 @app.post("/api/policies/unblock")
-def unblock_host(req: UnblockRequest, db: Session = Depends(get_db)):
+def unblock_host(
+    req: UnblockRequest,
+    actor: tuple[str, str] = Depends(verify_admin_rbac),
+    db: Session = Depends(get_db),
+):
     rules = (
         db.query(PolicyRule)
         .filter(
@@ -387,7 +424,7 @@ def unblock_host(req: UnblockRequest, db: Session = Depends(get_db)):
     for r in rules:
         r.status = "removed"
     db.commit()
-    log_audit(db, "admin", "admin", "UNBLOCK_HOST", f"Removed quarantine/rate-limit on {req.target_ip}")
+    log_audit(db, actor[0], actor[1], "UNBLOCK_HOST", f"Removed quarantine/rate-limit on {req.target_ip}")
     return {"status": "unblocked", "target_ip": req.target_ip}
 
 
@@ -471,14 +508,8 @@ def analyze_flow(telemetry: FlowTelemetry, db: Session = Depends(get_db)):
     }
 
     if pred == 1 and telemetry.src_ip not in whitelist:
-        # Surgical mitigation: stealth recon or moderate UDP anomalies can be rate-limited; floods/scans quarantined
-        if RUNTIME_CONFIG["auto_mitigation_mode"] == "adaptive" and threat_type == "stealth_recon":
-            action = "quarantine"
-            rate_kbps = 0
-        else:
-            action = "quarantine"
-            rate_kbps = 0
-
+        action = "quarantine"
+        rate_kbps = 0
         existing_rule = (
             db.query(PolicyRule)
             .filter(
@@ -494,7 +525,7 @@ def analyze_flow(telemetry: FlowTelemetry, db: Session = Depends(get_db)):
                     target_ip=telemetry.src_ip,
                     rule_type=action,
                     rate_kbps=rate_kbps,
-                    priority=100 if action == "quarantine" else 80,
+                    priority=100,
                     status="active",
                     reason=f"Auto-{action}: {threat_type} ({RUNTIME_CONFIG['active_model']})",
                     created_by="ml_engine",
@@ -577,6 +608,35 @@ def analyze_flow(telemetry: FlowTelemetry, db: Session = Depends(get_db)):
         "action": action,
         "inference_latency_ms": inference_ms,
     }
+
+
+@app.post("/api/pcap/analyze_samples")
+def analyze_sample_pcaps(db: Session = Depends(get_db)):
+    """Generates and parses 4 real binary .pcap files and evaluates extracted flows through the ML engine."""
+    sample_files = generate_sample_pcap_files()
+    results = []
+    for label, path in sample_files.items():
+        with open(path, "rb") as f:
+            flows = parse_pcap_bytes(f.read())
+        for fl in flows:
+            res = analyze_flow(FlowTelemetry(**fl), db)
+            results.append({"pcap_name": os.path.basename(path), "scenario": label, "analysis": res})
+    log_audit(db, "admin", "admin", "PCAP_BATCH_INGEST", f"Parsed {len(results)} flow windows from {len(sample_files)} binary .pcap files")
+    return {"status": "completed", "files_processed": len(sample_files), "flows_evaluated": len(results), "results": results}
+
+
+@app.post("/api/pcap/upload")
+def upload_and_analyze_pcap(req: PcapUploadRequest, db: Session = Depends(get_db)):
+    """Accepts a base64-encoded binary .pcap capture from the UI, extracts flows, and classifies them."""
+    try:
+        raw_bytes = base64.b64decode(req.pcap_base64)
+        flows = parse_pcap_bytes(raw_bytes)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"PCAP parse error: {e}")
+
+    analyzed = [analyze_flow(FlowTelemetry(**fl), db) for fl in flows]
+    log_audit(db, "admin", "admin", "PCAP_UPLOAD_INGEST", f"Uploaded {req.filename} ({len(analyzed)} flows extracted)")
+    return {"status": "processed", "filename": req.filename, "flows_extracted": len(analyzed), "results": analyzed}
 
 
 @app.post("/api/simulate")
