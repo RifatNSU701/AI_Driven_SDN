@@ -5,7 +5,9 @@ import joblib
 import numpy as np
 import pandas as pd
 
-MODEL_DIR = "models"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MODEL_DIR = os.path.join(BASE_DIR, "models")
+
 FEATURES = [
     "flow_count",
     "pkt_rate",
@@ -39,8 +41,22 @@ class MasterMLEngine:
                 self.means = st["means"]
                 self.stds = st["stds"]
         else:
-            self.means = {"flow_count": 3.5, "pkt_rate": 110.0, "byte_rate": 140000.0, "mean_pkt_size": 520.0, "unique_dst_ports": 1.5, "syn_ratio": 0.08}
-            self.stds = {"flow_count": 2.0, "pkt_rate": 160.0, "byte_rate": 240000.0, "mean_pkt_size": 580.0, "unique_dst_ports": 0.8, "syn_ratio": 0.04}
+            self.means = {
+                "flow_count": 3.5,
+                "pkt_rate": 110.0,
+                "byte_rate": 140000.0,
+                "mean_pkt_size": 520.0,
+                "unique_dst_ports": 1.5,
+                "syn_ratio": 0.08,
+            }
+            self.stds = {
+                "flow_count": 2.0,
+                "pkt_rate": 160.0,
+                "byte_rate": 240000.0,
+                "mean_pkt_size": 580.0,
+                "unique_dst_ports": 0.8,
+                "syn_ratio": 0.04,
+            }
 
         imp_path = os.path.join(MODEL_DIR, "feature_importances.json")
         if os.path.exists(imp_path):
@@ -50,7 +66,6 @@ class MasterMLEngine:
             self.global_weights = {feat: 1.0 / len(FEATURES) for feat in FEATURES}
 
     def compute_mathematical_xai(self, sample_dict: dict) -> tuple[dict, float]:
-        """Computes per-flow feature attribution percentages (Z-score * RF Global Importance) and drift index."""
         raw_scores = {}
         z_scores = []
 
@@ -124,7 +139,6 @@ class MasterMLEngine:
         else:
             final_pred, final_conf = ensemble_pred, ensemble_conf
 
-        # Multi-Class Threat Classification
         if self.multi_model is not None and self.label_enc is not None:
             mc_idx = int(self.multi_model.predict(scaled)[0])
             mc_label = str(self.label_enc.inverse_transform([mc_idx])[0])
@@ -168,7 +182,7 @@ class MasterMLEngine:
             if threat_type == "high_vol_benign":
                 return (
                     f"Allowed (High-Volume Benign Burst): Large packet payload ({s['mean_pkt_size']:.0f} B) "
-                    f"and low SYN ratio ({s['syn_ratio']*100:.1f}%) confirm legitimate bulk transfer despite {s['pkt_rate']:.0f} pkts/s."
+                    f"and low SYN ratio ({s['syn_ratio'] * 100:.1f}%) confirm legitimate bulk transfer despite {s['pkt_rate']:.0f} pkts/s."
                 )
             return f"Allowed (Baseline Normal): {s['pkt_rate']:.1f} pkts/s across {s['unique_dst_ports']} port(s) within normal Z-score bounds."
 
@@ -178,7 +192,7 @@ class MasterMLEngine:
             "byte_rate": f"byte throughput ({s['byte_rate']:.0f} B/s)",
             "mean_pkt_size": f"packet size signature ({s['mean_pkt_size']:.0f} B)",
             "unique_dst_ports": f"port fan-out ({s['unique_dst_ports']} dst ports)",
-            "syn_ratio": f"SYN flood ratio ({s['syn_ratio']*100:.0f}%)",
+            "syn_ratio": f"SYN flood ratio ({s['syn_ratio'] * 100:.0f}%)",
         }
         flagged = [k for k, v in votes.items() if v == 1]
         return (

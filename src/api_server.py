@@ -15,6 +15,7 @@ from src.database import (
     SecurityEvent,
     PolicyRule,
     AuditLog,
+    init_db,
     get_db,
 )
 from src.auth import (
@@ -44,16 +45,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-MODEL_DIR = "models"
-LOG_DIR = "logs"
-WEB_DIR = os.path.join("src", "web")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+IS_VERCEL = bool(os.getenv("VERCEL"))
+
+MODEL_DIR = os.path.join(BASE_DIR, "models")
+WEB_DIR = os.path.join(BASE_DIR, "src", "web")
+LOG_DIR = "/tmp/logs" if IS_VERCEL else os.path.join(BASE_DIR, "logs")
+PCAP_DIR = "/tmp/pcaps" if IS_VERCEL else os.path.join(BASE_DIR, "data", "pcaps")
+
 EVENTS_FILE = os.path.join(LOG_DIR, "security_events.json")
 METRICS_FILE = os.path.join(MODEL_DIR, "evaluation_metrics.json")
 IMPORTANCE_FILE = os.path.join(MODEL_DIR, "feature_importances.json")
 
 os.makedirs(LOG_DIR, exist_ok=True)
-os.makedirs(WEB_DIR, exist_ok=True)
+if not IS_VERCEL:
+    os.makedirs(WEB_DIR, exist_ok=True)
 
+init_db()
 seed_default_accounts()
 
 AVAILABLE_MODELS = [
@@ -200,6 +208,7 @@ def health_check():
     return {
         "status": "online",
         "version": "3.1.0",
+        "deployment": "vercel" if IS_VERCEL else "local",
         "active_model": RUNTIME_CONFIG["active_model"],
         "auto_mitigation_mode": RUNTIME_CONFIG["auto_mitigation_mode"],
         "available_models": AVAILABLE_MODELS,
@@ -612,8 +621,7 @@ def analyze_flow(telemetry: FlowTelemetry, db: Session = Depends(get_db)):
 
 @app.post("/api/pcap/analyze_samples")
 def analyze_sample_pcaps(db: Session = Depends(get_db)):
-    """Generates and parses 4 real binary .pcap files and evaluates extracted flows through the ML engine."""
-    sample_files = generate_sample_pcap_files()
+    sample_files = generate_sample_pcap_files(output_dir=PCAP_DIR)
     results = []
     for label, path in sample_files.items():
         with open(path, "rb") as f:
@@ -627,7 +635,6 @@ def analyze_sample_pcaps(db: Session = Depends(get_db)):
 
 @app.post("/api/pcap/upload")
 def upload_and_analyze_pcap(req: PcapUploadRequest, db: Session = Depends(get_db)):
-    """Accepts a base64-encoded binary .pcap capture from the UI, extracts flows, and classifies them."""
     try:
         raw_bytes = base64.b64decode(req.pcap_base64)
         flows = parse_pcap_bytes(raw_bytes)
@@ -686,11 +693,15 @@ def prometheus_scrape_endpoint(db: Session = Depends(get_db)):
 
 @app.get("/api/robustness")
 def get_robustness_report():
-    report_path = os.path.join(MODEL_DIR, "robustness_report.json")
-    if not os.path.exists(report_path):
-        return run_robustness_suite()
-    with open(report_path, "r") as f:
-        return json.load(f)
+    tmp_path = "/tmp/robustness_report.json"
+    local_path = os.path.join(MODEL_DIR, "robustness_report.json")
+    if IS_VERCEL and os.path.exists(tmp_path):
+        with open(tmp_path, "r") as f:
+            return json.load(f)
+    if os.path.exists(local_path):
+        with open(local_path, "r") as f:
+            return json.load(f)
+    return run_robustness_suite()
 
 
 @app.post("/api/robustness/run")

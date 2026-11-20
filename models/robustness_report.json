@@ -1,145 +1,91 @@
 {
-  "timestamp": "2026-10-29 09:24:04",
+  "timestamp": "2026-11-20 21:30:47",
   "total_scenarios": 9,
   "passed_scenarios": 9,
   "pass_rate_pct": 100.0,
-  "batch_1000_flows_ms": 8.48,
-  "max_throughput_flows_per_sec": 117758,
+  "batch_1000_latency_ms": 1.64,
+  "max_throughput_flows_per_sec": 608420,
   "scenarios": [
     {
       "name": "Normal Enterprise Web Flow (h2 -> h1)",
-      "category": "Baseline Benign",
+      "category": "Benign Baseline",
       "expected": "allow",
       "actual": "allow",
-      "passed": true,
-      "latency_ms": 364.24,
-      "votes": {
-        "Random Forest": 0,
-        "Gradient Boosting": 0,
-        "DNN (MLP)": 0,
-        "Isolation Forest": 0,
-        "Baseline": 0
-      }
+      "threat_type": "benign",
+      "latency_ms": 146.624,
+      "passed": true
     },
     {
       "name": "Linux Mint Legitimate SSH/HTTP Session (10.10.10.3)",
-      "category": "Multi-VM Benign",
+      "category": "Benign Multi-Host",
       "expected": "allow",
       "actual": "allow",
-      "passed": true,
-      "latency_ms": 20.574,
-      "votes": {
-        "Random Forest": 0,
-        "Gradient Boosting": 0,
-        "DNN (MLP)": 0,
-        "Isolation Forest": 0,
-        "Baseline": 0
-      }
+      "threat_type": "benign",
+      "latency_ms": 107.765,
+      "passed": true
     },
     {
       "name": "High-Volume Legitimate iperf3 Bulk Transfer (610 KB/s)",
-      "category": "False-Positive Stress Test",
+      "category": "False-Positive Stress",
       "expected": "allow",
       "actual": "allow",
-      "passed": true,
-      "latency_ms": 25.33,
-      "votes": {
-        "Random Forest": 0,
-        "Gradient Boosting": 0,
-        "DNN (MLP)": 0,
-        "Isolation Forest": 1,
-        "Baseline": 1
-      }
+      "threat_type": "high_vol_benign",
+      "latency_ms": 106.394,
+      "passed": true
     },
     {
       "name": "High-Rate Database Backup Burst (850 KB/s)",
-      "category": "False-Positive Stress Test",
+      "category": "False-Positive Stress",
       "expected": "allow",
       "actual": "allow",
-      "passed": true,
-      "latency_ms": 15.608,
-      "votes": {
-        "Random Forest": 0,
-        "Gradient Boosting": 0,
-        "DNN (MLP)": 0,
-        "Isolation Forest": 1,
-        "Baseline": 1
-      }
+      "threat_type": "high_vol_benign",
+      "latency_ms": 116.279,
+      "passed": true
     },
     {
       "name": "Aggressive Nmap TCP SYN Port Scan (h3 -> h1)",
-      "category": "Known Recon Attack",
+      "category": "Reconnaissance Attack",
       "expected": "quarantine",
       "actual": "quarantine",
-      "passed": true,
-      "latency_ms": 13.535,
-      "votes": {
-        "Random Forest": 1,
-        "Gradient Boosting": 1,
-        "DNN (MLP)": 1,
-        "Isolation Forest": 1,
-        "Baseline": 1
-      }
+      "threat_type": "port_scan",
+      "latency_ms": 124.282,
+      "passed": true
     },
     {
       "name": "High-Rate hping3 TCP SYN Flood (h3 -> h1)",
-      "category": "Known DoS Attack",
+      "category": "Volumetric DoS",
       "expected": "quarantine",
       "actual": "quarantine",
-      "passed": true,
-      "latency_ms": 13.629,
-      "votes": {
-        "Random Forest": 1,
-        "Gradient Boosting": 1,
-        "DNN (MLP)": 1,
-        "Isolation Forest": 1,
-        "Baseline": 1
-      }
+      "threat_type": "tcp_syn_flood",
+      "latency_ms": 102.32,
+      "passed": true
     },
     {
       "name": "Low-and-Slow Stealth Recon Scan (18 ports @ 19 pkts/s)",
-      "category": "Unseen / Evasion Attack",
+      "category": "Unseen Evasion",
       "expected": "quarantine",
       "actual": "quarantine",
-      "passed": true,
-      "latency_ms": 17.503,
-      "votes": {
-        "Random Forest": 1,
-        "Gradient Boosting": 1,
-        "DNN (MLP)": 1,
-        "Isolation Forest": 1,
-        "Baseline": 1
-      }
+      "threat_type": "stealth_recon",
+      "latency_ms": 104.579,
+      "passed": true
     },
     {
       "name": "Adversarial Padded-Packet SYN Flood (512B Payload Padding)",
-      "category": "Adversarial Evasion Test",
+      "category": "Adversarial Evasion",
       "expected": "quarantine",
       "actual": "quarantine",
-      "passed": true,
-      "latency_ms": 16.221,
-      "votes": {
-        "Random Forest": 1,
-        "Gradient Boosting": 1,
-        "DNN (MLP)": 1,
-        "Isolation Forest": 1,
-        "Baseline": 1
-      }
+      "threat_type": "tcp_syn_flood",
+      "latency_ms": 102.127,
+      "passed": true
     },
     {
       "name": "Kali Linux Multi-Vector Scan + Flood (10.10.10.2)",
-      "category": "Multi-VM Offensive Test",
+      "category": "Multi-Vector Attack",
       "expected": "quarantine",
       "actual": "quarantine",
-      "passed": true,
-      "latency_ms": 14.454,
-      "votes": {
-        "Random Forest": 1,
-        "Gradient Boosting": 1,
-        "DNN (MLP)": 1,
-        "Isolation Forest": 1,
-        "Baseline": 1
-      }
+      "threat_type": "tcp_syn_flood",
+      "latency_ms": 103.72,
+      "passed": true
     }
   ]
 }
