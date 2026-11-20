@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 from datetime import datetime
 from sqlalchemy import (
@@ -13,13 +14,22 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 IS_VERCEL = bool(os.getenv("VERCEL"))
+IS_FROZEN = getattr(sys, "frozen", False)
+BASE_DIR = (
+    sys._MEIPASS
+    if IS_FROZEN and hasattr(sys, "_MEIPASS")
+    else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+APP_DATA_DIR = os.path.join(os.path.expanduser("~"), ".ai_sdn_cybersoc")
 
 if os.getenv("DATABASE_URL"):
     DATABASE_URL = os.getenv("DATABASE_URL")
 elif IS_VERCEL:
     DATABASE_URL = "sqlite:////tmp/sdn_soc.db"
+elif IS_FROZEN:
+    os.makedirs(APP_DATA_DIR, exist_ok=True)
+    DATABASE_URL = f"sqlite:///{os.path.join(APP_DATA_DIR, 'sdn_soc.db')}"
 else:
     os.makedirs(os.path.join(BASE_DIR, "data"), exist_ok=True)
     DATABASE_URL = f"sqlite:///{os.path.join(BASE_DIR, 'data', 'sdn_soc.db')}"

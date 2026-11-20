@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import json
 import base64
@@ -45,20 +46,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 IS_VERCEL = bool(os.getenv("VERCEL"))
+IS_FROZEN = getattr(sys, "frozen", False)
+BASE_DIR = (
+    sys._MEIPASS
+    if IS_FROZEN and hasattr(sys, "_MEIPASS")
+    else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+APP_DATA_DIR = os.path.join(os.path.expanduser("~"), ".ai_sdn_cybersoc")
 
 MODEL_DIR = os.path.join(BASE_DIR, "models")
 WEB_DIR = os.path.join(BASE_DIR, "src", "web")
-LOG_DIR = "/tmp/logs" if IS_VERCEL else os.path.join(BASE_DIR, "logs")
-PCAP_DIR = "/tmp/pcaps" if IS_VERCEL else os.path.join(BASE_DIR, "data", "pcaps")
+LOG_DIR = (
+    "/tmp/logs"
+    if IS_VERCEL
+    else (os.path.join(APP_DATA_DIR, "logs") if IS_FROZEN else os.path.join(BASE_DIR, "logs"))
+)
+PCAP_DIR = (
+    "/tmp/pcaps"
+    if IS_VERCEL
+    else (os.path.join(APP_DATA_DIR, "pcaps") if IS_FROZEN else os.path.join(BASE_DIR, "data", "pcaps"))
+)
 
 EVENTS_FILE = os.path.join(LOG_DIR, "security_events.json")
 METRICS_FILE = os.path.join(MODEL_DIR, "evaluation_metrics.json")
 IMPORTANCE_FILE = os.path.join(MODEL_DIR, "feature_importances.json")
 
 os.makedirs(LOG_DIR, exist_ok=True)
-if not IS_VERCEL:
+if not IS_VERCEL and not IS_FROZEN:
     os.makedirs(WEB_DIR, exist_ok=True)
 
 init_db()
@@ -205,10 +220,11 @@ def serve_root():
 
 @app.get("/health")
 def health_check():
+    mode = "vercel" if IS_VERCEL else ("desktop_exe" if IS_FROZEN else "local")
     return {
         "status": "online",
         "version": "3.1.0",
-        "deployment": "vercel" if IS_VERCEL else "local",
+        "deployment": mode,
         "active_model": RUNTIME_CONFIG["active_model"],
         "auto_mitigation_mode": RUNTIME_CONFIG["auto_mitigation_mode"],
         "available_models": AVAILABLE_MODELS,
@@ -694,9 +710,14 @@ def prometheus_scrape_endpoint(db: Session = Depends(get_db)):
 @app.get("/api/robustness")
 def get_robustness_report():
     tmp_path = "/tmp/robustness_report.json"
+    frozen_path = os.path.join(APP_DATA_DIR, "robustness_report.json")
     local_path = os.path.join(MODEL_DIR, "robustness_report.json")
+
     if IS_VERCEL and os.path.exists(tmp_path):
         with open(tmp_path, "r") as f:
+            return json.load(f)
+    if IS_FROZEN and os.path.exists(frozen_path):
+        with open(frozen_path, "r") as f:
             return json.load(f)
     if os.path.exists(local_path):
         with open(local_path, "r") as f:

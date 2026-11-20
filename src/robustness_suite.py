@@ -8,8 +8,14 @@ import pandas as pd
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.ml_engine import ml_engine, FEATURES
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 IS_VERCEL = bool(os.getenv("VERCEL"))
+IS_FROZEN = getattr(sys, "frozen", False)
+BASE_DIR = (
+    sys._MEIPASS
+    if IS_FROZEN and hasattr(sys, "_MEIPASS")
+    else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+APP_DATA_DIR = os.path.join(os.path.expanduser("~"), ".ai_sdn_cybersoc")
 MODEL_DIR = os.path.join(BASE_DIR, "models")
 
 
@@ -90,7 +96,6 @@ def run_robustness_suite() -> dict:
             "passed": passed,
         })
 
-    # 1,000-flow batch scale benchmark
     batch_df = pd.DataFrame([scenarios[i % len(scenarios)]["sample"] for i in range(1000)])[FEATURES]
     t0 = time.perf_counter()
     scaled_batch = ml_engine.scaler.transform(batch_df)
@@ -109,7 +114,13 @@ def run_robustness_suite() -> dict:
         "scenarios": results,
     }
 
-    out_path = "/tmp/robustness_report.json" if IS_VERCEL else os.path.join(MODEL_DIR, "robustness_report.json")
+    if IS_VERCEL:
+        out_path = "/tmp/robustness_report.json"
+    elif IS_FROZEN:
+        out_path = os.path.join(APP_DATA_DIR, "robustness_report.json")
+    else:
+        out_path = os.path.join(MODEL_DIR, "robustness_report.json")
+
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w") as f:
         json.dump(report, f, indent=2)
