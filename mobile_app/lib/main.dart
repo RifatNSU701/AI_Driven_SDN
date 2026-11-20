@@ -13,7 +13,7 @@ class SdnCyberSocApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'AI-SDN Cyber-SOC v3.0',
+      title: 'AI-SDN Cyber-SOC v3.1',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(useMaterial3: true).copyWith(
         scaffoldBackgroundColor: const Color(0xFF050811),
@@ -37,11 +37,16 @@ class MobileSocShell extends StatefulWidget {
 }
 
 class _MobileSocShellState extends State<MobileSocShell> {
+  static const String cloudUrl = 'https://ai-driven-sdn.vercel.app';
+  static const String localUsbUrl = 'http://127.0.0.1:8000';
+
   int currentTab = 0;
-  String apiBase = 'http://127.0.0.1:8000';
+  String apiBase = cloudUrl;
+  String? jwtToken;
   String operatorName = 'admin (ADMIN)';
   String activeModel = 'Ensemble Voting (All 5 Models)';
   bool isConnected = false;
+  bool isBusy = false;
   Timer? _timer;
 
   Map<String, dynamic> stats = {
@@ -85,7 +90,7 @@ class _MobileSocShellState extends State<MobileSocShell> {
   void initState() {
     super.initState();
     fetchAllData();
-    _timer = Timer.periodic(const Duration(seconds: 2), (_) => fetchAllData());
+    _timer = Timer.periodic(const Duration(seconds: 3), (_) => fetchAllData());
   }
 
   @override
@@ -97,21 +102,41 @@ class _MobileSocShellState extends State<MobileSocShell> {
     super.dispose();
   }
 
+  Map<String, String> _authHeaders() {
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    if (jwtToken != null && jwtToken!.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $jwtToken';
+    }
+    return headers;
+  }
+
+  void _showSnack(String msg, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg, style: const TextStyle(color: Colors.white, fontSize: 12)),
+        backgroundColor: isError ? Colors.red.shade800 : const Color(0xFF0E7490),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   Future<void> fetchAllData() async {
     try {
       final res = await Future.wait([
-        http.get(Uri.parse('$apiBase/api/stats')).timeout(const Duration(seconds: 2)),
-        http.get(Uri.parse('$apiBase/api/events?limit=50')).timeout(const Duration(seconds: 2)),
-        http.get(Uri.parse('$apiBase/api/models')).timeout(const Duration(seconds: 2)),
-        http.get(Uri.parse('$apiBase/api/policies')).timeout(const Duration(seconds: 2)),
-        http.get(Uri.parse('$apiBase/api/audit')).timeout(const Duration(seconds: 2)),
-        http.get(Uri.parse('$apiBase/api/robustness')).timeout(const Duration(seconds: 2)),
+        http.get(Uri.parse('$apiBase/api/stats'), headers: _authHeaders()).timeout(const Duration(seconds: 6)),
+        http.get(Uri.parse('$apiBase/api/events?limit=50'), headers: _authHeaders()).timeout(const Duration(seconds: 6)),
+        http.get(Uri.parse('$apiBase/api/models'), headers: _authHeaders()).timeout(const Duration(seconds: 6)),
+        http.get(Uri.parse('$apiBase/api/policies'), headers: _authHeaders()).timeout(const Duration(seconds: 6)),
+        http.get(Uri.parse('$apiBase/api/audit'), headers: _authHeaders()).timeout(const Duration(seconds: 6)),
+        http.get(Uri.parse('$apiBase/api/robustness'), headers: _authHeaders()).timeout(const Duration(seconds: 6)),
       ]);
 
       if (res[0].statusCode == 200 && mounted) {
-        final st = jsonDecode(res[0].body);
+        final st = jsonDecode(res[0].body) as Map<String, dynamic>;
         final ev = jsonDecode(res[1].body) as List<dynamic>;
-        final md = jsonDecode(res[2].body);
+        final md = jsonDecode(res[2].body) as Map<String, dynamic>;
         final pol = jsonDecode(res[3].body) as List<dynamic>;
         final aud = jsonDecode(res[4].body) as List<dynamic>;
         final rob = jsonDecode(res[5].body) as Map<String, dynamic>;
@@ -136,73 +161,161 @@ class _MobileSocShellState extends State<MobileSocShell> {
   }
 
   Future<void> simulate(String scenario) async {
+    setState(() => isBusy = true);
     try {
-      final r = await http.post(
-        Uri.parse('$apiBase/api/simulate'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'scenario': scenario}),
-      );
+      final r = await http
+          .post(
+            Uri.parse('$apiBase/api/simulate'),
+            headers: _authHeaders(),
+            body: jsonEncode({'scenario': scenario}),
+          )
+          .timeout(const Duration(seconds: 8));
       if (r.statusCode == 200) {
+        final data = jsonDecode(r.body);
         await fetchAllData();
-        if (events.isNotEmpty) {
+        if (events.isNotEmpty && mounted) {
           setState(() => selectedForensicEvent = events.first);
         }
+        _showSnack('Flow ${data['threat_type'].toString().toUpperCase()} → ${data['action'].toString().toUpperCase()}');
+      } else {
+        _showSnack('Simulation failed (HTTP ${r.statusCode})', isError: true);
       }
-    } catch (_) {}
+    } catch (_) {
+      _showSnack('Cannot reach $apiBase', isError: true);
+    } finally {
+      if (mounted) setState(() => isBusy = false);
+    }
+  }
+
+  Future<void> ingestSamplePcaps() async {
+    setState(() => isBusy = true);
+    try {
+      final r = await http
+          .post(Uri.parse('$apiBase/api/pcap/analyze_samples'), headers: _authHeaders())
+          .timeout(const Duration(seconds: 15));
+      if (r.statusCode == 200) {
+        final d = jsonDecode(r.body);
+        await fetchAllData();
+        if (events.isNotEmpty && mounted) {
+          setState(() => selectedForensicEvent = events.first);
+        }
+        _showSnack('Parsed ${d['files_processed']} binary .pcap files (${d['flows_evaluated']} flows evaluated)');
+      } else {
+        _showSnack('PCAP ingest error (HTTP ${r.statusCode})', isError: true);
+      }
+    } catch (_) {
+      _showSnack('PCAP ingest failed — check server connection', isError: true);
+    } finally {
+      if (mounted) setState(() => isBusy = false);
+    }
   }
 
   Future<void> switchModel(String modelName) async {
     try {
-      await http.post(
-        Uri.parse('$apiBase/api/models/select'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'model_name': modelName}),
-      );
-      await fetchAllData();
-    } catch (_) {}
+      final r = await http
+          .post(
+            Uri.parse('$apiBase/api/models/select'),
+            headers: _authHeaders(),
+            body: jsonEncode({'model_name': modelName}),
+          )
+          .timeout(const Duration(seconds: 6));
+      if (r.statusCode == 403) {
+        _showSnack('RBAC 403 Forbidden: Admin role required to switch ML engine.', isError: true);
+        return;
+      }
+      if (r.statusCode == 200) {
+        await fetchAllData();
+        _showSnack('Active ML engine switched to $modelName');
+      }
+    } catch (_) {
+      _showSnack('Failed to switch model', isError: true);
+    }
   }
 
   Future<void> enforcePolicy() async {
     try {
-      await http.post(
-        Uri.parse('$apiBase/api/policies/enforce'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'target_ip': fwIpCtrl.text.trim(),
-          'rule_type': fwAction,
-          'rate_kbps': int.tryParse(fwRateCtrl.text.trim()) ?? 512,
-          'protocol': fwProto,
-          'reason': fwReasonCtrl.text.trim(),
-        }),
-      );
-      await fetchAllData();
-    } catch (_) {}
+      final r = await http
+          .post(
+            Uri.parse('$apiBase/api/policies/enforce'),
+            headers: _authHeaders(),
+            body: jsonEncode({
+              'target_ip': fwIpCtrl.text.trim(),
+              'rule_type': fwAction,
+              'rate_kbps': int.tryParse(fwRateCtrl.text.trim()) ?? 512,
+              'protocol': fwProto,
+              'reason': fwReasonCtrl.text.trim(),
+            }),
+          )
+          .timeout(const Duration(seconds: 6));
+      if (r.statusCode == 403) {
+        _showSnack('RBAC 403 Forbidden: Analyst role cannot modify OpenFlow rules.', isError: true);
+        return;
+      }
+      if (r.statusCode == 200) {
+        await fetchAllData();
+        _showSnack('Installed $fwAction rule for ${fwIpCtrl.text.trim()}');
+      }
+    } catch (_) {
+      _showSnack('Policy enforcement failed', isError: true);
+    }
   }
 
   Future<void> unblockIp(String ip) async {
     try {
-      await http.post(
-        Uri.parse('$apiBase/api/policies/unblock'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'target_ip': ip}),
-      );
-      await fetchAllData();
-    } catch (_) {}
+      final r = await http
+          .post(
+            Uri.parse('$apiBase/api/policies/unblock'),
+            headers: _authHeaders(),
+            body: jsonEncode({'target_ip': ip}),
+          )
+          .timeout(const Duration(seconds: 6));
+      if (r.statusCode == 403) {
+        _showSnack('RBAC 403 Forbidden: Admin role required to unblock hosts.', isError: true);
+        return;
+      }
+      if (r.statusCode == 200) {
+        await fetchAllData();
+        _showSnack('Unblocked host $ip');
+      }
+    } catch (_) {
+      _showSnack('Failed to unblock $ip', isError: true);
+    }
   }
 
   Future<void> runRobustnessSuite() async {
+    setState(() => isBusy = true);
     try {
-      await http.post(Uri.parse('$apiBase/api/robustness/run'));
-      await fetchAllData();
-    } catch (_) {}
+      final r = await http
+          .post(Uri.parse('$apiBase/api/robustness/run'), headers: _authHeaders())
+          .timeout(const Duration(seconds: 15));
+      if (r.statusCode == 200) {
+        await fetchAllData();
+        _showSnack('Robustness & Evasion suite completed');
+      }
+    } catch (_) {
+      _showSnack('Failed to run robustness suite', isError: true);
+    } finally {
+      if (mounted) setState(() => isBusy = false);
+    }
   }
 
   Future<void> clearEvents() async {
     try {
-      await http.delete(Uri.parse('$apiBase/api/events/clear'));
-      setState(() => selectedForensicEvent = null);
-      await fetchAllData();
-    } catch (_) {}
+      final r = await http
+          .delete(Uri.parse('$apiBase/api/events/clear'), headers: _authHeaders())
+          .timeout(const Duration(seconds: 6));
+      if (r.statusCode == 403) {
+        _showSnack('RBAC 403 Forbidden: Analyst role cannot clear SOC logs.', isError: true);
+        return;
+      }
+      if (r.statusCode == 200) {
+        setState(() => selectedForensicEvent = null);
+        await fetchAllData();
+        _showSnack('Telemetry log & active blocks cleared');
+      }
+    } catch (_) {
+      _showSnack('Failed to clear telemetry', isError: true);
+    }
   }
 
   void openServerModal() {
@@ -225,18 +338,60 @@ class _MobileSocShellState extends State<MobileSocShell> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('🔐 Cyber-SOC JWT Login & Endpoint Config',
+            const Text('🔐 Cyber-SOC v3.1 JWT Login & Endpoint Config',
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => urlCtrl.text = cloudUrl,
+                    child: const Text('☁️ Vercel Cloud', style: TextStyle(fontSize: 11)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => urlCtrl.text = localUsbUrl,
+                    child: const Text('🔌 Local USB', style: TextStyle(fontSize: 11)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
             TextField(
               controller: urlCtrl,
               decoration: const InputDecoration(
-                labelText: 'FastAPI Server URL (USB = http://127.0.0.1:8000)',
+                labelText: 'FastAPI Server URL (no trailing slash)',
                 border: OutlineInputBorder(),
                 isDense: true,
               ),
             ),
             const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      userCtrl.text = 'admin';
+                      passCtrl.text = 'Admin@SDN2026';
+                    },
+                    child: const Text('Fill Admin', style: TextStyle(fontSize: 11)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      userCtrl.text = 'analyst';
+                      passCtrl.text = 'Analyst@SDN2026';
+                    },
+                    child: const Text('Fill Analyst (RBAC)', style: TextStyle(fontSize: 11)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
             TextField(
               controller: userCtrl,
               decoration: const InputDecoration(
@@ -260,23 +415,32 @@ class _MobileSocShellState extends State<MobileSocShell> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () async {
-                  setState(() => apiBase = urlCtrl.text.trim());
+                  final cleanedUrl = urlCtrl.text.trim().replaceAll(RegExp(r'/+$'), '');
+                  setState(() => apiBase = cleanedUrl);
                   try {
-                    final r = await http.post(
-                      Uri.parse('$apiBase/api/auth/login'),
-                      headers: {'Content-Type': 'application/json'},
-                      body: jsonEncode({
-                        'username': userCtrl.text.trim(),
-                        'password': passCtrl.text,
-                      }),
-                    );
+                    final r = await http
+                        .post(
+                          Uri.parse('$apiBase/api/auth/login'),
+                          headers: {'Content-Type': 'application/json'},
+                          body: jsonEncode({
+                            'username': userCtrl.text.trim(),
+                            'password': passCtrl.text,
+                          }),
+                        )
+                        .timeout(const Duration(seconds: 8));
                     if (r.statusCode == 200) {
                       final d = jsonDecode(r.body);
                       setState(() {
+                        jwtToken = d['access_token'];
                         operatorName = '${d['user']['username']} (${d['user']['role'].toString().toUpperCase()})';
                       });
+                      _showSnack('Signed in as $operatorName');
+                    } else {
+                      _showSnack('Login rejected (HTTP ${r.statusCode})', isError: true);
                     }
-                  } catch (_) {}
+                  } catch (_) {
+                    _showSnack('Endpoint updated, but login could not reach $apiBase', isError: true);
+                  }
                   if (ctx.mounted) Navigator.pop(ctx);
                   fetchAllData();
                 },
@@ -304,8 +468,8 @@ class _MobileSocShellState extends State<MobileSocShell> {
           children: [
             Row(
               children: [
-                const Text('🛡️ AI-SDN Cyber-SOC v3.0',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                const Text('🛡️ AI-SDN Cyber-SOC v3.1',
+                    style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold)),
                 const SizedBox(width: 8),
                 Container(
                   width: 8,
@@ -318,20 +482,27 @@ class _MobileSocShellState extends State<MobileSocShell> {
               ],
             ),
             Text(
-              'CPU: ${cp['controller_cpu_pct'] ?? 8.4}% • RAM: ${cp['controller_ram_mb'] ?? 312}MB • OVS Flows: ${cp['ovs_active_flows'] ?? 4}',
+              '$operatorName • CPU: ${cp['controller_cpu_pct'] ?? 8.4}% • Flows: ${cp['ovs_active_flows'] ?? 4}',
               style: const TextStyle(fontSize: 10.5, color: Colors.cyanAccent),
             ),
           ],
         ),
         actions: [
+          if (isBusy)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 10),
+              child: Center(
+                child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+              ),
+            ),
           IconButton(
             icon: const Icon(Icons.delete_sweep_outlined),
-            tooltip: 'Reset Telemetry',
+            tooltip: 'Reset Telemetry (Admin)',
             onPressed: clearEvents,
           ),
           IconButton(
             icon: const Icon(Icons.manage_accounts_outlined),
-            tooltip: 'Login & Server Settings',
+            tooltip: 'JWT RBAC & Server Settings',
             onPressed: openServerModal,
           ),
         ],
@@ -376,7 +547,7 @@ class _MobileSocShellState extends State<MobileSocShell> {
             child: Text(
               hasThreat
                   ? 'THREAT CONTAINED: Host(s) ${allIsolated.join(", ")} enforced on OVS s1. Tap chip below to unblock.'
-                  : 'NETWORK HEALTHY: OpenFlow 1.3 Switch s1 operating at 0% benign packet loss.',
+                  : 'NETWORK HEALTHY ($apiBase): OpenFlow 1.3 Switch s1 operating at 0% benign loss.',
               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
             ),
           ),
@@ -417,7 +588,7 @@ class _MobileSocShellState extends State<MobileSocShell> {
             ),
           ),
           const SizedBox(height: 10),
-          const Text('⚡ 6-CLASS SDN TRAFFIC & ATTACK GENERATOR',
+          const Text('⚡ 6-CLASS SDN TRAFFIC, ATTACK & PCAP ENGINE',
               style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
           const SizedBox(height: 6),
           Wrap(
@@ -434,9 +605,22 @@ class _MobileSocShellState extends State<MobileSocShell> {
               _simButton('🐉 Kali Attack', 'kali_attack', Colors.purpleAccent),
             ],
           ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4F46E5),
+                foregroundColor: Colors.white,
+              ),
+              icon: const Icon(Icons.inventory_2_outlined, size: 16),
+              label: const Text('📦 Ingest 4 Binary Lab .pcap Captures', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              onPressed: ingestSamplePcaps,
+            ),
+          ),
           const SizedBox(height: 10),
           if (allIsolated.isNotEmpty) ...[
-            const Text('🛡️ ACTIVE CONTAINMENT (TAP TO UNBLOCK)',
+            const Text('🛡️ ACTIVE CONTAINMENT (TAP TO UNBLOCK — ADMIN)',
                 style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.redAccent)),
             const SizedBox(height: 6),
             Wrap(
@@ -535,7 +719,7 @@ class _MobileSocShellState extends State<MobileSocShell> {
             style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.cyanAccent)),
         const SizedBox(height: 8),
         if (ev == null)
-          const Text('Trigger any traffic scenario on the Command tab to inspect mathematical XAI weights.')
+          const Text('Trigger any traffic scenario or PCAP capture on the Command tab to inspect mathematical XAI weights.')
         else
           Container(
             padding: const EdgeInsets.all(12),
@@ -635,7 +819,7 @@ class _MobileSocShellState extends State<MobileSocShell> {
     return ListView(
       padding: const EdgeInsets.all(12),
       children: [
-        const Text('🔥 OPENFLOW 1.3 FLOW & METER RULE BUILDER',
+        const Text('🔥 OPENFLOW 1.3 FLOW & METER RULE BUILDER (ADMIN RBAC)',
             style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.cyanAccent)),
         const SizedBox(height: 8),
         Container(
@@ -729,9 +913,11 @@ class _MobileSocShellState extends State<MobileSocShell> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              '🧪 ROBUSTNESS: ${robustness['pass_rate_pct'] ?? 100}% (${robustness['max_throughput_flows_per_sec'] ?? 117758} flows/s)',
-              style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Colors.greenAccent),
+            Expanded(
+              child: Text(
+                '🧪 ROBUSTNESS: ${robustness['pass_rate_pct'] ?? 100}% (${robustness['max_throughput_flows_per_sec'] ?? 608420} flows/s)',
+                style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Colors.greenAccent),
+              ),
             ),
             ElevatedButton(
               onPressed: runRobustnessSuite,
